@@ -33,6 +33,13 @@ npm run dev
 npm run build
 ```
 
+### Dev environment (this repo)
+
+- Tooling comes from the Nix devshell (`nix/devshell.nix`, loaded by direnv). Use `just` recipes rather than raw commands; run `just` to list them.
+- `just dev` builds in watch mode into the dev vault (`dev/vault/.obsidian/plugins/wikijs-publisher/`) via the `OBSIDIAN_PLUGIN_DIR` env var read by `esbuild.config.mjs`.
+- `just obsidian` launches an isolated Obsidian instance (config in `dev/obsidian-config/`) on `dev/vault/`, with Hot Reload installed.
+- `just wiki-up` starts a throwaway Wiki.js on <http://localhost:3080> (`docker-compose.yaml`) and seeds it with `dev/wikijs/seed.sh`. The API key is in `dev/wikijs/.api-key`; the admin login is `admin@example.com` / `admin12345`.
+
 ## Linting
 
 - ESLint is preconfigured with `eslint-plugin-obsidianmd` for Obsidian-specific rules.

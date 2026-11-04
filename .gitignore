@@ -1,5 +1,5 @@
 # vscode
-.vscode 
+.vscode
 
 # Intellij
 *.iml
@@ -20,3 +20,16 @@ data.json
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
+
+# direnv
+.direnv/
+
+# nix
+result
+result-*
+
+# Dev environment (throwaway Obsidian config/vault plugins, Wiki.js API key)
+dev/obsidian-config/
+dev/vault/.obsidian/*
+!dev/vault/.obsidian/community-plugins.json
+dev/wikijs/.api-key
