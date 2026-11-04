@@ -26,18 +26,24 @@ just setup     # install pre-commit hooks and npm dependencies, prepare the dev 
 
 Run `just` to list all available recipes.
 
-### Throwaway Wiki.js instance
+### Throwaway Wiki.js instances
 
 ```bash
-just wiki-up     # start Wiki.js + Postgres and seed them
-just wiki-reset  # start over from a fresh instance
-just wiki-down   # stop it (data is kept)
+just wiki-up     # start Wiki.js v2 and v3 (each with its Postgres) and seed them
+just wiki-reset  # start over from fresh instances
+just wiki-down   # stop them (data is kept)
 ```
 
-Wiki.js is served on <http://localhost:3080> (set `WIKI_PORT` and `WIKI_URL` to change it). Seeding is idempotent and:
+| | URL | API token | API reference |
+|---|---|---|---|
+| Wiki.js v2 | <http://localhost:3080> | `dev/wikijs/.api-key-v2` (admin API key) | GraphQL, introspection at `/graphql` |
+| Wiki.js v3 | <http://localhost:3081> | `dev/wikijs/.api-key-v3` (personal access token, `pages:write` + `assets:write`) | REST, Swagger UI at `/_api/` |
 
-- runs the first-time setup with the `admin@example.com` / `admin12345` admin account,
-- enables the GraphQL API and creates a full-access API key, saved in `dev/wikijs/.api-key`,
+Set `WIKI_V2_PORT`/`WIKI_V2_URL` or `WIKI_V3_PORT`/`WIKI_V3_URL` to change the ports. Seeding is idempotent and, on each instance:
+
+- sets up the `admin@example.com` / `admin12345` admin account,
+- enables the API and creates the API token,
+- on v3, makes the wiki publicly readable (a fresh v3 install is private, unlike v2),
 - creates a few sample pages.
 
 ### Throwaway Obsidian instance

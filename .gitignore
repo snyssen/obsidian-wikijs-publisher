@@ -32,4 +32,4 @@ result-*
 dev/obsidian-config/
 dev/vault/.obsidian/*
 !dev/vault/.obsidian/community-plugins.json
-dev/wikijs/.api-key
+dev/wikijs/.api-key-*

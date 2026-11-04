@@ -1,6 +1,6 @@
-# Throwaway Wiki.js instance for development. Use the `wiki-*` just recipes to manage it.
+# Throwaway Wiki.js instances for development (v2 and v3). Use the `wiki-*` just recipes to manage them.
 services:
-  db:
+  db-v2:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: wiki
@@ -12,22 +12,54 @@ services:
       timeout: 5s
       retries: 30
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-v2-data:/var/lib/postgresql/data
 
-  wiki:
+  wiki-v2:
     image: ghcr.io/requarks/wiki:2
     depends_on:
-      db:
+      db-v2:
         condition: service_healthy
     environment:
       DB_TYPE: postgres
-      DB_HOST: db
+      DB_HOST: db-v2
       DB_PORT: 5432
       DB_USER: wikijs
       DB_PASS: wikijsrocks
       DB_NAME: wiki
     ports:
-      - "${WIKI_PORT:-3080}:3000"
+      - "${WIKI_V2_PORT:-3080}:3000"
+
+  db-v3:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: wiki
+      POSTGRES_USER: wikijs
+      POSTGRES_PASSWORD: wikijsrocks
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wikijs -d wiki"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - db-v3-data:/var/lib/postgresql
+
+  wiki-v3:
+    image: ghcr.io/requarks/wiki:3.0.2
+    depends_on:
+      db-v3:
+        condition: service_healthy
+    environment:
+      DB_HOST: db-v3
+      DB_PORT: 5432
+      DB_USER: wikijs
+      DB_PASS: wikijsrocks
+      DB_NAME: wiki
+      # First admin account, only used when the database is created
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASS: admin12345
+    ports:
+      - "${WIKI_V3_PORT:-3081}:3000"
 
 volumes:
-  db-data:
+  db-v2-data:
+  db-v3-data:

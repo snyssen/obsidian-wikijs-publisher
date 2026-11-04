@@ -33,12 +33,17 @@ npm run dev
 npm run build
 ```
 
+### Roadmap (this repo)
+
+- [ROADMAP.md](ROADMAP.md) is the development plan and progress tracker, shared across sessions. Read it before starting work, then keep it up to date: check off finished items, record decisions, and update the Wiki.js API notes when you learn something new.
+
 ### Dev environment (this repo)
 
 - Tooling comes from the Nix devshell (`nix/devshell.nix`, loaded by direnv). Use `just` recipes rather than raw commands; run `just` to list them.
 - `just dev` builds in watch mode into the dev vault (`dev/vault/.obsidian/plugins/wikijs-publisher/`) via the `OBSIDIAN_PLUGIN_DIR` env var read by `esbuild.config.mjs`.
 - `just obsidian` launches an isolated Obsidian instance (config in `dev/obsidian-config/`) on `dev/vault/`, with Hot Reload installed.
-- `just wiki-up` starts a throwaway Wiki.js on <http://localhost:3080> (`docker-compose.yaml`) and seeds it with `dev/wikijs/seed.sh`. The API key is in `dev/wikijs/.api-key`; the admin login is `admin@example.com` / `admin12345`.
+- `just wiki-up` starts throwaway Wiki.js instances (`docker-compose.yaml`): v2 on <http://localhost:3080> and v3 on <http://localhost:3081>, seeded by `dev/wikijs/seed-v2.sh` and `dev/wikijs/seed-v3.sh`. The API tokens are in `dev/wikijs/.api-key-v2` and `dev/wikijs/.api-key-v3`; the admin login is `admin@example.com` / `admin12345` on both.
+- The v3 OpenAPI spec is served at <http://localhost:3081/_api/json> (Swagger UI at `/_api/`): check API contracts there.
 
 ## Linting
 

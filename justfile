@@ -2,7 +2,8 @@ plugin_id := "wikijs-publisher"
 vault_dir := justfile_directory() / "dev/vault"
 plugin_dir := vault_dir / ".obsidian/plugins" / plugin_id
 obsidian_config_dir := justfile_directory() / "dev/obsidian-config"
-wiki_url := env("WIKI_URL", "http://localhost:3080")
+wiki_v2_url := env("WIKI_V2_URL", "http://localhost:3080")
+wiki_v3_url := env("WIKI_V3_URL", "http://localhost:3081")
 
 default:
   just --list
@@ -55,25 +56,26 @@ obsidian: vault-setup
 obsidian-reset:
   rm -rf "{{obsidian_config_dir}}"
 
-# Start the throwaway Wiki.js instance and seed it
+# Start the throwaway Wiki.js instances (v2 and v3) and seed them
 wiki-up:
   docker compose up -d
   just wiki-seed
 
-# Seed Wiki.js: first-time setup, API key and sample pages (idempotent)
+# Seed both Wiki.js instances: admin account, API token and sample pages (idempotent)
 wiki-seed:
-  WIKI_URL="{{wiki_url}}" ./dev/wikijs/seed.sh
+  WIKI_URL="{{wiki_v2_url}}" ./dev/wikijs/seed-v2.sh
+  WIKI_URL="{{wiki_v3_url}}" ./dev/wikijs/seed-v3.sh
 
-# Stop the Wiki.js instance (data is kept)
+# Stop the Wiki.js instances (data is kept)
 wiki-down:
   docker compose down
 
-# Destroy the Wiki.js instance and its data, then start a fresh seeded one
+# Destroy the Wiki.js instances and their data, then start fresh seeded ones
 wiki-reset:
   docker compose down -v
-  rm -f dev/wikijs/.api-key
+  rm -f dev/wikijs/.api-key-*
   just wiki-up
 
-# Follow Wiki.js logs
-wiki-logs:
-  docker compose logs -f wiki
+# Follow the logs of a Wiki.js instance
+wiki-logs version="v3":
+  docker compose logs -f wiki-{{version}}

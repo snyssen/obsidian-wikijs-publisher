@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Seeds the throwaway Wiki.js instance: runs first-time setup, enables the API,
-# creates an API key (saved to dev/wikijs/.api-key) and a few sample pages.
+# Seeds the throwaway Wiki.js v2 instance: runs first-time setup, enables the API,
+# creates an API key (saved to dev/wikijs/.api-key-v2) and a few sample pages.
 # Safe to run multiple times.
 # GraphQL queries use $variables, which must not be expanded by the shell
 # shellcheck disable=SC2016
@@ -9,9 +9,9 @@ set -euo pipefail
 WIKI_URL="${WIKI_URL:-http://localhost:3080}"
 WIKI_ADMIN_EMAIL="${WIKI_ADMIN_EMAIL:-admin@example.com}"
 WIKI_ADMIN_PASSWORD="${WIKI_ADMIN_PASSWORD:-admin12345}"
-API_KEY_FILE="$(dirname "$0")/.api-key"
+API_KEY_FILE="$(dirname "$0")/.api-key-v2"
 
-log() { echo -e "\e[34;1m[seed]\e[0m $*"; }
+log() { echo -e "\e[34;1m[seed-v2]\e[0m $*"; }
 
 # gql <bearer token> <query> [variables json]
 gql() {
