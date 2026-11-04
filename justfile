@@ -45,8 +45,9 @@ vault-setup:
       '{vaults: {"0b51d1a4e1b0a5e1": {path: $path, ts: $ts, open: true}}}' > "$config_file"
   fi
 
-# Launch a throwaway Obsidian instance (isolated from your main config) on the dev vault
 # ELECTRON_RUN_AS_NODE can leak from VS Code terminals and would make Obsidian start as plain Node
+
+# Launch a throwaway Obsidian instance (isolated from your main config) on the dev vault
 obsidian: vault-setup
   env -u ELECTRON_RUN_AS_NODE XDG_CONFIG_HOME="{{obsidian_config_dir}}" setsid obsidian >/dev/null 2>&1 &
 

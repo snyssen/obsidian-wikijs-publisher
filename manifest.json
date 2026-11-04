@@ -2,7 +2,7 @@
 	"id": "wikijs-publisher",
 	"name": "Wiki.js Publisher",
 	"version": "1.0.0",
-	"minAppVersion": "1.0.0",
+	"minAppVersion": "1.14.4",
 	"description": "Send your notes to a Wiki.js instance.",
 	"author": "snyssen",
 	"isDesktopOnly": false

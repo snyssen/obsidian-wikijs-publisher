@@ -1,38 +1,41 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
-import MyPlugin from './main';
+import { PluginSettingTab, SettingDefinitionItem } from 'obsidian';
 
-export interface MyPluginSettings {
-	mySetting: string;
+export interface WikiJsPublisherSettings {
+	wikiUrl: string;
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default',
+export const DEFAULT_SETTINGS: WikiJsPublisherSettings = {
+	wikiUrl: '',
 };
 
-export class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+type SettingKey = keyof WikiJsPublisherSettings;
 
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
+// Values are read from and persisted to `plugin.settings` by PluginSettingTab itself
+export class WikiJsPublisherSettingTab extends PluginSettingTab {
+	getSettingDefinitions(): SettingDefinitionItem<SettingKey>[] {
+		return [
+			{
+				name: 'Wiki.js URL',
+				desc: 'Base URL of your Wiki.js instance.',
+				control: {
+					type: 'text',
+					key: 'wikiUrl',
+					placeholder: 'https://wiki.example.com',
+					validate: validateUrl,
+				},
+			},
+		];
 	}
+}
 
-	display(): void {
-		const { containerEl } = this;
-
-		containerEl.empty();
-
-		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc("It's a secret")
-			.addText((text) =>
-				text
-					.setPlaceholder('Enter your secret')
-					.setValue(this.plugin.settings.mySetting)
-					.onChange(async (value) => {
-						this.plugin.settings.mySetting = value;
-						await this.plugin.saveSettings();
-					}),
-			);
+function validateUrl(value: string): string | void {
+	if (value === '') return;
+	try {
+		const { protocol } = new URL(value);
+		if (protocol !== 'http:' && protocol !== 'https:') {
+			return 'The URL must start with http:// or https://';
+		}
+	} catch {
+		return 'Enter a valid URL';
 	}
 }
