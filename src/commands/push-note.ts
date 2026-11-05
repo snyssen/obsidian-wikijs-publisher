@@ -1,6 +1,8 @@
 import { getFrontMatterInfo, Notice, parseYaml, TFile } from 'obsidian';
+import { convertMarkdown, dialectFor, referencedLinkpaths } from '../convert';
 import type WikiJsPublisherPlugin from '../main';
 import { Note, notePagePath, toPageInput } from '../publish/note';
+import { resolveLinks } from '../publish/resolve';
 import { askDestination } from '../ui/destination-modal';
 import { errorMessage, showPushedNotice } from '../ui/notices';
 import { createClient } from '../wiki/factory';
@@ -23,9 +25,29 @@ export async function pushNote(plugin: WikiJsPublisherPlugin, file: TFile): Prom
 
 	const progress = new Notice(`Pushing ${file.basename}…`, 0);
 	try {
-		const input = toPageInput(await readNote(plugin, file), destination);
-		const client = await createClient(obsidianHttp, plugin.getWikiConfig());
-		showPushedNotice(`${file.basename} pushed`, await client.upsertPage(input));
+		const note = await readNote(plugin, file);
+		const pagePath = notePagePath(destination, file.basename);
+		const config = plugin.getWikiConfig();
+		const client = await createClient(obsidianHttp, config);
+
+		const targets = await resolveLinks(referencedLinkpaths(note.body), {
+			app: plugin.app,
+			client,
+			registry: plugin.registry,
+			wikiUrl: config.url,
+			file,
+			pagePath,
+			attachmentFolder: settings.attachmentFolder,
+		});
+		const converted = convertMarkdown(note.body, {
+			dialect: dialectFor(client.version),
+			resolve: (linkpath) => targets.get(linkpath),
+		});
+
+		const input = toPageInput({ ...note, body: converted.content, inlineTags: converted.tags }, destination);
+		const page = await client.upsertPage(input);
+		await plugin.registry.set(config.url, file.path, input.path);
+		showPushedNotice(`${file.basename} pushed`, page);
 	} catch (error) {
 		new Notice(`Could not push ${file.basename}: ${errorMessage(error)}`, 10000);
 	} finally {

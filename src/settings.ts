@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, SettingDefinitionItem } from 'obsidian';
 import { runConnectionTest } from './commands/test-connection';
 import type WikiJsPublisherPlugin from './main';
+import type { PushRegistryData } from './publish/registry';
 import { isValidWikiPath } from './wiki/paths';
 import { WikiConfig } from './wiki/types';
 
@@ -11,8 +12,11 @@ export interface WikiJsPublisherSettings {
 	apiVersion: WikiConfig['version'];
 	locale: string;
 	defaultDestination: string;
+	attachmentFolder: string;
 	/** Destination of the last push, prefilled next time. Not shown in the settings tab. */
 	lastDestination?: string;
+	/** Where notes were pushed (see PushRegistry). Not shown in the settings tab. */
+	pushedPages?: PushRegistryData;
 }
 
 export const DEFAULT_SETTINGS: WikiJsPublisherSettings = {
@@ -21,6 +25,7 @@ export const DEFAULT_SETTINGS: WikiJsPublisherSettings = {
 	apiVersion: 'auto',
 	locale: '',
 	defaultDestination: '',
+	attachmentFolder: 'attachments',
 };
 
 type SettingKey = keyof WikiJsPublisherSettings;
@@ -90,6 +95,16 @@ export class WikiJsPublisherSettingTab extends PluginSettingTab {
 							validate: validateDestination,
 						},
 					},
+					{
+						name: 'Attachment folder',
+						desc: 'Wiki folder that images and other attachments are uploaded to, under their vault folder.',
+						control: {
+							type: 'text',
+							key: 'attachmentFolder',
+							placeholder: 'attachments',
+							validate: validateAttachmentFolder,
+						},
+					},
 				],
 			},
 		];
@@ -112,6 +127,11 @@ function validateLocale(value: string): string | void {
 	if (value !== '' && !/^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,4})?$/.test(value)) {
 		return 'Enter a locale code, such as en or pt-br';
 	}
+}
+
+function validateAttachmentFolder(value: string): string | void {
+	if (value.trim() === '') return 'Enter a folder name';
+	return validateDestination(value);
 }
 
 function validateDestination(value: string): string | void {

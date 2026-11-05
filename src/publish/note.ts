@@ -9,6 +9,8 @@ export interface Note {
 	frontmatter?: unknown;
 	/** Markdown content, without the frontmatter block. */
 	body: string;
+	/** Tags found in the body, added to the frontmatter ones. */
+	inlineTags?: string[];
 }
 
 /** Wiki path of a single note pushed to `destination`: `Some/Path` + `My note.md` → `some/path/my-note`. */
@@ -26,7 +28,7 @@ export function toPageInput(note: Note, destination: string): PageInput {
 		path,
 		title: nonEmptyString(frontmatter.title) ?? note.basename,
 		description: nonEmptyString(frontmatter.description) ?? '',
-		tags: parseTags(frontmatter.tags),
+		tags: [...new Set([...parseTags(frontmatter.tags), ...(note.inlineTags ?? [])])],
 		content: note.body,
 	};
 }
