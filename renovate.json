@@ -13,5 +13,13 @@
   },
   "lockFileMaintenance": {
     "enabled": true
-  }
+  },
+  "packageRules": [
+    {
+      "description": "The dev environment runs one Wiki.js instance per major version (v2 and v3): only update each within its major",
+      "matchPackageNames": ["ghcr.io/requarks/wiki"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ]
 }

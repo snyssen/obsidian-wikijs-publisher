@@ -1,7 +1,7 @@
 # Throwaway Wiki.js instances for development (v2 and v3). Use the `wiki-*` just recipes to manage them.
 services:
   db-v2:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_DB: wiki
       POSTGRES_USER: wikijs
@@ -12,10 +12,10 @@ services:
       timeout: 5s
       retries: 30
     volumes:
-      - db-v2-data:/var/lib/postgresql/data
+      - db-v2-data:/var/lib/postgresql
 
   wiki-v2:
-    image: ghcr.io/requarks/wiki:2
+    image: ghcr.io/requarks/wiki:2.5.314
     depends_on:
       db-v2:
         condition: service_healthy
