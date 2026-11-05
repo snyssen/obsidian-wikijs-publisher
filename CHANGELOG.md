@@ -1,0 +1,18 @@
+# Changelog
+
+## 0.1.0 (2026-11-05)
+
+
+### Features
+
+* add initial dev environment ([6dd04b9](https://github.com/snyssen/obsidian-wikijs-publisher/commit/6dd04b9640d21eb2515b60cd27263d5fcc93395b))
+* add initial settings screen with connection test ([77868a0](https://github.com/snyssen/obsidian-wikijs-publisher/commit/77868a012dc161f7267da3b07b4907061efc7afa))
+* Implement initial API layer and push test page to wikijs (M2) ([8c8d50a](https://github.com/snyssen/obsidian-wikijs-publisher/commit/8c8d50a432489de3fb382dd15f6b17e63e424e2c))
+* implement markdown conversion (M4) ([e7bab7c](https://github.com/snyssen/obsidian-wikijs-publisher/commit/e7bab7cf419ecdb44380cc0dff0cb2d2e792091d))
+* implement note push (M3) ([7f838c1](https://github.com/snyssen/obsidian-wikijs-publisher/commit/7f838c1442c575105d20fd5d03639df33d48d2e0))
+
+
+### Bug Fixes
+
+* clean sample code to fix lint issues and align it with v1.14.4 of Obsidian ([022fe9f](https://github.com/snyssen/obsidian-wikijs-publisher/commit/022fe9f276c16251aebead84b70d7a738b11472d))
+* **deps:** prevent renovate from trying to update wikijs v2 to v3 since we specifically want to test against v2 and v3 ([6965452](https://github.com/snyssen/obsidian-wikijs-publisher/commit/6965452b21794c8ff65c7c4b05f4540747f10bb1))
