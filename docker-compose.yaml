@@ -15,7 +15,7 @@ services:
       - db-v2-data:/var/lib/postgresql/data
 
   wiki-v2:
-    image: ghcr.io/requarks/wiki:2
+    image: ghcr.io/requarks/wiki:3
     depends_on:
       db-v2:
         condition: service_healthy
