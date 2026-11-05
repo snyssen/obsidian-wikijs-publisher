@@ -1,5 +1,6 @@
 ---
 title: Getting started
+description: A sample note to push
 tags:
   - guide
   - sample

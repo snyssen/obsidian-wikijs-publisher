@@ -11,6 +11,8 @@ export interface WikiJsPublisherSettings {
 	apiVersion: WikiConfig['version'];
 	locale: string;
 	defaultDestination: string;
+	/** Destination of the last push, prefilled next time. Not shown in the settings tab. */
+	lastDestination?: string;
 }
 
 export const DEFAULT_SETTINGS: WikiJsPublisherSettings = {

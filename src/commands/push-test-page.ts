@@ -1,6 +1,7 @@
 // Development only (registered when __DEV__): exercises the API layer end to end from inside Obsidian.
 import { Notice } from 'obsidian';
 import type WikiJsPublisherPlugin from '../main';
+import { errorMessage, showPushedNotice } from '../ui/notices';
 import { createClient } from '../wiki/factory';
 import { obsidianHttp } from '../wiki/obsidian-http';
 import { toWikiPath } from '../wiki/paths';
@@ -38,16 +39,9 @@ export async function pushTestPage(plugin: WikiJsPublisherPlugin): Promise<void>
 			].join('\n'),
 		});
 
-		new Notice(
-			createFragment((f) => {
-				f.appendText('Test page pushed: ');
-				f.createEl('a', { text: page.url, href: page.url });
-				if (page.warning) f.appendText(`. ${page.warning}`);
-			}),
-			10000,
-		);
+		showPushedNotice('Test page pushed', page);
 	} catch (error) {
-		new Notice(`Push failed: ${error instanceof Error ? error.message : String(error)}`, 10000);
+		new Notice(`Push failed: ${errorMessage(error)}`, 10000);
 	} finally {
 		progress.hide();
 	}

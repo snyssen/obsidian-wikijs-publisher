@@ -17,10 +17,11 @@ Push notes from an Obsidian vault to a Wiki.js instance:
 - [x] **M0 – Dev environment**
 - [x] **M1 – Configuration & connection**
 - [x] **M2 – API layer + first test push**
-- [ ] **M3 – Push a single note** ← next
+- [ ] **M3 – Push a single note** ← in progress
 - [ ] **M4 – Conversion**
 - [ ] **M5 – Bulk push**
-- [ ] **M6 – Polish & release**
+- [ ] **M6 – Automatic push**
+- [ ] **M7 – Polish & release**
 
 ## Milestones
 
@@ -61,18 +62,20 @@ Push notes from an Obsidian vault to a Wiki.js instance:
 
 ### M3 – Push a single note
 
-- [ ] Command and file context menu entry
-- [ ] Destination modal, prefilled with the default destination, remembers the last used one
-- [ ] Path mapping and slugify (see [path constraint](#path-constraint))
-- [ ] Title from frontmatter `title` or the file name; tags from frontmatter
-- [ ] Upsert, then a notice with a link to the page
+- [x] Command **Push current note** (`push-note`, available when a Markdown note is active) and a **Push to Wiki.js** entry in the file context menu (`src/commands/index.ts`, `push-note.ts`)
+- [x] Destination modal (`src/ui/destination-modal.ts`): prefilled with the last used destination (`lastDestination`, kept in `data.json` but not shown in the settings tab), else the default destination; previews the resulting page path and validates it; Enter pushes
+- [x] Path mapping and slugify (see [path constraint](#path-constraint)): `<destination>/<note name>`, e.g. `Some/Path` + `My note.md` → `some/path/my-note` (`src/publish/note.ts`, unit tested)
+- [x] Title from frontmatter `title`, else the file name; `description` and `tags` from frontmatter too (a list or a comma/space separated string, `#` dropped)
+- [x] Upsert, then a notice with a link to the page (`src/ui/notices.ts`, shared with the dev command)
+- [ ] Manual check in the throwaway Obsidian: push `Guides/Getting started` (frontmatter title, description and tags) and `Welcome` (no frontmatter) to both instances, from the command and the context menu; push again to check the overwrite
 
 ### M4 – Conversion
 
-- [ ] Strip frontmatter
+- [x] Strip frontmatter (done in M3: the body is cut after the frontmatter block)
 - [ ] `[[wikilinks]]`, aliases and heading links → Markdown links to the target wiki paths (resolved with `metadataCache`)
 - [ ] Embeds (`![[image.png]]`) → upload the attachment, then link to it
 - [ ] Callouts → per-version syntax (see [Callouts](#callouts)): GitHub alerts (`> [!NOTE]`) on v3, `{.is-info}` class blocks on v2. Conversion therefore needs a per-version layer (e.g. a small dialect object chosen from `client.version`), not a single converter.
+- [ ] Inline tags (`#tag` in the body): added to the page's tags (merged with the frontmatter ones, no duplicates), and turned into links to the wiki's tag search: `/t/<tag>?sort=title` on v2, `/_tags?t=<tag>` on v3 (another per-version difference)
 - [ ] Highlights, `%%comments%%`
 - [ ] Unit tests for each rule
 
@@ -84,7 +87,15 @@ Push notes from an Obsidian vault to a Wiki.js instance:
 - [ ] Attachments uploaded once per batch
 - [ ] Progress display and a summary of failures
 
-### M6 – Polish & release
+### M6 – Automatic push
+
+> **Needs refinement before work starts:** the behaviour below is a first idea, not settled yet.
+
+- [ ] Setting (off by default) to push notes automatically when they change, debounced, for notes that have the `publish-to-wikijs` frontmatter property (same property as M5's bulk push)
+- [ ] The destination comes from the property's value, e.g. `publish-to-wikijs: some/path`. An empty value (or `true`) pushes to the wiki root or to the default destination: to be decided
+- [ ] Open points: what happens on rename/move and when the property is removed; error reporting without spamming notices; interaction with links to notes that aren't published
+
+### M7 – Polish & release
 
 - [ ] README: disclose network use and what is sent (Obsidian developer policies)
 - [ ] Error messages reviewed
@@ -107,7 +118,7 @@ src/
   main.ts                 lifecycle only: settings, setting tab, commands
   settings.ts             settings interface, defaults, declarative tab
   globals.d.ts            __DEV__ build flag (true in dev builds)
-  commands/               test connection, push test page (dev only)
+  commands/               push note, test connection, push test page (dev only)
   wiki/
     types.ts              WikiClient interface, WikiConfig, PageInput, RemotePage, UploadedAsset
     http.ts               HttpFn abstraction + WikiApiError (no Obsidian import: testable in Node)
@@ -120,8 +131,12 @@ src/
     v2/multipart.ts       multipart body builder for uploads
     v3/client.ts          REST implementation (site id resolved lazily, render after save)
     v3/path-hash.ts       cyrb53 port
-  publish/  (M3+)         path mapping, note → PageInput, conversion, bulk planner
-  ui/       (M3+)         destination modal, progress
+  commands/index.ts       command and context menu registration
+  publish/
+    note.ts               note → PageInput: path mapping, title/description/tags from frontmatter (no Obsidian import)
+  ui/
+    destination-modal.ts  asks where to push, with a page path preview
+    notices.ts            pushed-page notice with a link, error message helper
 tests/
   unit/                   no network (`just test`, run in CI)
   integration/            against the docker wikis (`just test-integration`)
@@ -135,6 +150,7 @@ interface WikiClient {
 	getPageByPath(path: string): Promise<RemotePage | null>; // in the configured locale
 	createPage(input: PageInput): Promise<RemotePage>;
 	updatePage(id: string, input: PageInput): Promise<RemotePage>; // ids are strings (v2 integers are converted)
+	upsertPage(input: PageInput): Promise<RemotePage>; // shared: look up by path, then create or update
 	deletePage(id: string): Promise<void>;
 	uploadAsset(folderPath: string, fileName: string, data: ArrayBuffer, mimeType: string): Promise<UploadedAsset>;
 }
@@ -197,5 +213,6 @@ v3 only allows letters, digits, `-`, `_`, spaces and `/` in paths: no dots. It l
 - **2026-11-05 – Page updates on v2** force `editor: "markdown"`, since the content sent is always Markdown. v3 leaves the editor alone (Markdown and Visual share one source).
 - **2026-11-05 – File and folder names** are slugified by the plugin (`toWikiPath`, `toAssetFileName`) before being sent, so both versions store predictable names. The plugin still links to the name each server reports back.
 - **2026-11-05 – Tooling:** esbuild bumped from 0.25.5 to 0.28.2 (required by vitest 5). Tests live in `tests/` (included in `tsconfig.json`, Obsidian lint rules relaxed there since they run in Node).
-- **2026-11-05 – Releases:** Release Please (same workflow as the author's other projects), with the build done by Nix (`nix/packages/wikijs-publisher/`) so another CI (argunix) can take it over later. Tags have no leading `v` (Obsidian requirement). Versions start at `0.x` until M6's 1.0.0; until then the plugin is installed with BRAT. The sample's npm matrix lint workflow, Nix devshell workflow and tag-triggered release workflow were merged into `build-release.yaml`; `version-bump.mjs` and the empty `styles.css` were removed.
+- **2026-11-05 – Releases:** Release Please (same workflow as the author's other projects), with the build done by Nix (`nix/packages/wikijs-publisher/`) so another CI (argunix) can take it over later. Tags have no leading `v` (Obsidian requirement). Versions start at `0.x` until M7's 1.0.0; until then the plugin is installed with BRAT. The sample's npm matrix lint workflow, Nix devshell workflow and tag-triggered release workflow were merged into `build-release.yaml`; `version-bump.mjs` and the empty `styles.css` were removed.
+- **2026-11-05 – Single note push:** the frontmatter is parsed from the file content just read (`getFrontMatterInfo` + `parseYaml`), not from the metadata cache, which can lag behind recent edits. Invalid YAML fails the push with a clear message rather than pushing the raw block.
 - **2026-11-04 – Page lookup:** pages are looked up by path on every push. No wiki ids are stored in the notes, so moving to another instance or from v2 to v3 doesn't leave stale ids.

@@ -1,6 +1,5 @@
 import { Plugin } from 'obsidian';
-import { pushTestPage } from './commands/push-test-page';
-import { runConnectionTest } from './commands/test-connection';
+import { registerCommands } from './commands';
 import {
 	DEFAULT_SETTINGS,
 	WikiJsPublisherSettings,
@@ -15,20 +14,7 @@ export default class WikiJsPublisherPlugin extends Plugin {
 		await this.loadSettings();
 
 		this.addSettingTab(new WikiJsPublisherSettingTab(this.app, this));
-
-		this.addCommand({
-			id: 'test-connection',
-			name: 'Test connection',
-			callback: () => void runConnectionTest(this),
-		});
-
-		if (__DEV__) {
-			this.addCommand({
-				id: 'dev-push-test-page',
-				name: 'Push test page (dev)',
-				callback: () => void pushTestPage(this),
-			});
-		}
+		registerCommands(this);
 	}
 
 	async loadSettings() {

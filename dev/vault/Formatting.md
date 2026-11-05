@@ -1,3 +1,11 @@
+---
+tags:
+  - guide
+  - obsidian
+  - sample
+title: Formatting Test Page
+description: This note is used to test complex Markdown formatting and its proper conversion to WikiJS
+---
 # Formatting
 
 ## Text
