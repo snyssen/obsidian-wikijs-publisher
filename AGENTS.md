@@ -40,6 +40,7 @@ npm run build
 ### Dev environment (this repo)
 
 - Tooling comes from the Nix devshell (`nix/devshell.nix`, loaded by direnv). Use `just` recipes rather than raw commands; run `just` to list them.
+- `just package` builds the release artifacts with Nix (into `result/`), exactly as CI does.
 - `just dev` builds in watch mode into the dev vault (`dev/vault/.obsidian/plugins/wikijs-publisher/`) via the `OBSIDIAN_PLUGIN_DIR` env var read by `esbuild.config.mjs`.
 - `just obsidian` launches an isolated Obsidian instance (config in `dev/obsidian-config/`) on `dev/vault/`, with Hot Reload installed.
 - `just wiki-up` starts throwaway Wiki.js instances (`docker-compose.yaml`): v2 on <http://localhost:3080> and v3 on <http://localhost:3081>, seeded by `dev/wikijs/seed-v2.sh` and `dev/wikijs/seed-v3.sh`. The API tokens are in `dev/wikijs/.api-key-v2` and `dev/wikijs/.api-key-v3`; the admin login is `admin@example.com` / `admin12345` on both.
@@ -106,9 +107,10 @@ npm run build
 
 ## Versioning & releases
 
-- Bump `version` in `manifest.json` (SemVer) and update `versions.json` to map plugin version → minimum app version.
-- Create a GitHub release whose tag exactly matches `manifest.json`'s `version`. Do not use a leading `v`.
-- Attach `manifest.json`, `main.js`, and `styles.css` (if present) to the release as individual assets.
+- Releases are automated with Release Please (`release-please-config.json`, `.github/workflows/build-release.yaml`): use Conventional Commits, and never bump versions or create tags by hand. The release PR bumps `package.json`, `package-lock.json` and `manifest.json` together.
+- Tags exactly match `manifest.json`'s `version`, without a leading `v` (configured in `release-please-config.json`).
+- The release job builds with Nix (`nix build .#wikijs-publisher`, defined in `nix/packages/wikijs-publisher/`) and attaches `main.js` and `manifest.json` as individual assets. If the plugin ever ships a `styles.css`, add it to the Nix package output and to the upload step.
+- `versions.json` maps plugin version → minimum app version; only add an entry when `minAppVersion` changes.
 - After the initial release, follow the process to add/update your plugin in the community catalog as required.
 
 ## Security, privacy, and compliance

@@ -59,4 +59,11 @@ On first launch, Obsidian asks whether you trust the vault's author: select **Tr
 
 ### Releasing
 
-Bump `version` in `manifest.json` and `versions.json` (`npm version patch|minor|major` does it for you), then push a tag matching the version exactly (no leading `v`). The release workflow builds the plugin and creates a draft GitHub release with `main.js`, `manifest.json` and `styles.css`.
+Releases are automated with [Release Please](https://github.com/googleapis/release-please), from [Conventional Commits](https://www.conventionalcommits.org/) on `master`:
+
+1. The **Build & Release** workflow keeps a release PR open, with the next version (in `package.json`, `package-lock.json` and `manifest.json`) and the changelog.
+2. Merging it tags the release (`0.1.0`, no leading `v`, as Obsidian requires) and creates the GitHub release. The same run builds the plugin with Nix (`nix build .#wikijs-publisher`, which also type-checks, lints and runs the unit tests), attaches `main.js` and `manifest.json` to the release and attests their provenance.
+
+Until the plugin is in the community catalog, install it with [BRAT](https://github.com/TfTHacker/obsidian42-brat): **Add beta plugin** with this repository's URL. BRAT installs the release with the highest version, pre-releases included.
+
+`versions.json` only needs an entry when `minAppVersion` changes: map the version that raises it to the new minimum.

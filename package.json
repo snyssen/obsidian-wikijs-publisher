@@ -1,13 +1,12 @@
 {
 	"name": "wikijs-publisher",
-	"version": "1.0.0",
+	"version": "0.0.0",
 	"description": "Obsidian plugin to send notes to a Wiki.js instance",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"lint": "eslint .",
 		"test": "vitest run tests/unit",
 		"test:integration": "vitest run tests/integration"

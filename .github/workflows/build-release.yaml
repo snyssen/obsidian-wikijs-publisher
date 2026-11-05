@@ -1,0 +1,46 @@
+name: Build & Release
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+    branches:
+      - "**"
+permissions:
+  contents: write
+  pull-requests: write
+  # Build provenance attestation of the release assets
+  id-token: write
+  attestations: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      # Opens or updates the release PR; once it is merged, tags and creates the GitHub release.
+      # Configured by release-please-config.json: tags without a leading `v` (Obsidian requires the tag
+      # to match manifest.json's version) and manifest.json bumped along with package.json.
+      - id: rp
+        if: github.event_name != 'pull_request' && github.ref_name == 'master'
+        uses: googleapis/release-please-action@v5.0.0
+      - name: Check Nix flake inputs
+        uses: DeterminateSystems/flake-checker-action@main
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v23
+      - name: Set up Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v15
+      # The package build type-checks, lints, runs the unit tests and bundles main.js
+      - name: Build plugin and dev shell
+        run: nix build -L .#wikijs-publisher .#devShells.x86_64-linux.default
+      - name: Attest build provenance
+        if: steps.rp.outputs.release_created == 'true'
+        uses: actions/attest@v4
+        with:
+          subject-path: result/main.js
+      # Obsidian and BRAT install from these individual release assets
+      - name: Upload release assets
+        if: steps.rp.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.rp.outputs.tag_name }}
+        run: gh release upload "$TAG" result/main.js result/manifest.json --clobber

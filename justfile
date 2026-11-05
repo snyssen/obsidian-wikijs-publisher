@@ -27,6 +27,10 @@ dev: vault-setup
 build:
   npm run build
 
+# Build the release artifacts with Nix, as CI does (type check, lint, unit tests, bundle; outputs to result/)
+package:
+  nix build -L
+
 # Lint the project
 lint:
   npm run lint

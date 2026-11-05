@@ -89,7 +89,7 @@ Push notes from an Obsidian vault to a Wiki.js instance:
 - [ ] README: disclose network use and what is sent (Obsidian developer policies)
 - [ ] Error messages reviewed
 - [ ] Mobile smoke test
-- [ ] Release 1.0.0 through the release workflow
+- [ ] Release 1.0.0 through the release workflow (Release Please: a `feat!:` commit or `Release-As: 1.0.0` in a commit body)
 
 ### Later / open questions
 
@@ -197,4 +197,5 @@ v3 only allows letters, digits, `-`, `_`, spaces and `/` in paths: no dots. It l
 - **2026-11-05 – Page updates on v2** force `editor: "markdown"`, since the content sent is always Markdown. v3 leaves the editor alone (Markdown and Visual share one source).
 - **2026-11-05 – File and folder names** are slugified by the plugin (`toWikiPath`, `toAssetFileName`) before being sent, so both versions store predictable names. The plugin still links to the name each server reports back.
 - **2026-11-05 – Tooling:** esbuild bumped from 0.25.5 to 0.28.2 (required by vitest 5). Tests live in `tests/` (included in `tsconfig.json`, Obsidian lint rules relaxed there since they run in Node).
+- **2026-11-05 – Releases:** Release Please (same workflow as the author's other projects), with the build done by Nix (`nix/packages/wikijs-publisher/`) so another CI (argunix) can take it over later. Tags have no leading `v` (Obsidian requirement). Versions start at `0.x` until M6's 1.0.0; until then the plugin is installed with BRAT. The sample's npm matrix lint workflow, Nix devshell workflow and tag-triggered release workflow were merged into `build-release.yaml`; `version-bump.mjs` and the empty `styles.css` were removed.
 - **2026-11-04 – Page lookup:** pages are looked up by path on every push. No wiki ids are stored in the notes, so moving to another instance or from v2 to v3 doesn't leave stale ids.

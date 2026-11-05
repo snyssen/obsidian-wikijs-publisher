@@ -8,7 +8,6 @@ export default defineConfig(
 		'dist',
 		'dev',
 		'esbuild.config.mjs',
-		'version-bump.mjs',
 		'versions.json',
 		'main.js',
 		'package.json',
