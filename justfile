@@ -31,6 +31,14 @@ build:
 lint:
   npm run lint
 
+# Run unit tests
+test:
+  npm test
+
+# Run integration tests against the throwaway Wiki.js instances (start them with `just wiki-up`)
+test-integration:
+  WIKI_V2_URL="{{wiki_v2_url}}" WIKI_V3_URL="{{wiki_v3_url}}" npm run test:integration
+
 # Install hot-reload and prepare the plugin folder in the dev vault, and register the vault in the throwaway Obsidian config
 vault-setup:
   #!/usr/bin/env bash

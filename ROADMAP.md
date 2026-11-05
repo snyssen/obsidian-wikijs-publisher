@@ -16,8 +16,8 @@ Push notes from an Obsidian vault to a Wiki.js instance:
 
 - [x] **M0 – Dev environment**
 - [x] **M1 – Configuration & connection**
-- [ ] **M2 – API layer + first test push** ← next
-- [ ] **M3 – Push a single note**
+- [x] **M2 – API layer + first test push**
+- [ ] **M3 – Push a single note** ← next
 - [ ] **M4 – Conversion**
 - [ ] **M5 – Bulk push**
 - [ ] **M6 – Polish & release**
@@ -48,12 +48,16 @@ Push notes from an Obsidian vault to a Wiki.js instance:
 
 ### M2 – API layer + first test push
 
-- [ ] `WikiClient` interface (`src/wiki/types.ts`) and full `V2Client` / `V3Client` implementations
-- [ ] v3 path hash (cyrb53 port of Wiki.js `generatePathHash`)
-- [ ] v2 asset upload (multipart `POST /u`, folder ids): verify against the live instance first
-- [ ] `upsertPage`: look up by path, then create or update
-- [ ] Tests with vitest: unit tests (path hash, slugify, detection, error mapping) and integration tests run against both docker instances (`just test`, `just test-integration`)
-- [ ] Dev-only command **Push test page** (only in `just dev` builds, through an esbuild `define` flag): upserts `obsidian-test` with sample Markdown and an image
+- [x] `WikiClient` interface (`src/wiki/types.ts`) and full `V2Client` / `V3Client` implementations: look up by path, create, update, delete, upload asset
+- [x] v3 path hash (`src/wiki/v3/path-hash.ts`, cyrb53 port of Wiki.js `generatePathHash`, checked against hashes returned by the server)
+- [x] v2 asset upload: hand-built multipart body (`src/wiki/v2/multipart.ts`, `requestUrl` has no FormData), folder ids resolved and created segment by segment, stored name read back from the folder listing
+- [x] `upsertPage` (`WikiClient` method, implemented once in `src/wiki/base-client.ts`, which both clients extend): look up by path, then create or update
+- [x] Path helpers (`src/wiki/paths.ts`): `slugify`, `toWikiPath`, `toAssetFileName`
+- [x] Tests with vitest:
+  - [x] unit tests (`tests/unit/`, `just test`, also run in CI): path hash, slugify, detection, multipart, client error mapping, upsert
+  - [x] integration tests (`tests/integration/`, `just test-integration`) run against both docker instances: detection, connection, create → find → update (still published) → upsert → delete → re-create, asset upload (overwrite, binary integrity, SVG). On v3 they delete their `integration-tests` folder afterwards, since asset folders show in the navigation.
+- [x] Dev-only command **Push test page (dev)** (only in dev builds, through the `__DEV__` esbuild `define`; checked absent from the production bundle): upserts `<default destination>/obsidian-test` with sample Markdown and an SVG image. Its flow was checked on both wikis with a script: the rendered HTML has the image and the callout.
+- [x] Manual check in the throwaway Obsidian: run **Push test page (dev)** against both instances (the v2 unpublish bug was found this way, then fixed)
 
 ### M3 – Push a single note
 
@@ -68,7 +72,7 @@ Push notes from an Obsidian vault to a Wiki.js instance:
 - [ ] Strip frontmatter
 - [ ] `[[wikilinks]]`, aliases and heading links → Markdown links to the target wiki paths (resolved with `metadataCache`)
 - [ ] Embeds (`![[image.png]]`) → upload the attachment, then link to it
-- [ ] Callouts → Wiki.js blockquote syntax (`{.is-info}` etc.; check that v3 renders it the same way)
+- [ ] Callouts → per-version syntax (see [Callouts](#callouts)): GitHub alerts (`> [!NOTE]`) on v3, `{.is-info}` class blocks on v2. Conversion therefore needs a per-version layer (e.g. a small dialect object chosen from `client.version`), not a single converter.
 - [ ] Highlights, `%%comments%%`
 - [ ] Unit tests for each rule
 
@@ -90,6 +94,8 @@ Push notes from an Obsidian vault to a Wiki.js instance:
 ### Later / open questions
 
 - Renames and deletions propagated to the wiki
+- Where to put a note's attachments on the wiki (M4): on v3, asset folders and pages share one tree, so an asset folder can't have the same path as a page, and **asset folders show up in the wiki's navigation** like page folders (v2 hides them). The dev command uses `<page path>-assets`, which adds one navigation entry per page: probably not what we want for real notes.
+- Pages using a non-Markdown editor on v3 (e.g. HTML): updating them with Markdown content is untested. Markdown and Visual pages are fine (same source).
 - Storing each note's destination in its frontmatter
 - Dry-run preview before pushing
 - Two-way sync
@@ -100,25 +106,33 @@ Push notes from an Obsidian vault to a Wiki.js instance:
 src/
   main.ts                 lifecycle only: settings, setting tab, commands
   settings.ts             settings interface, defaults, declarative tab
+  globals.d.ts            __DEV__ build flag (true in dev builds)
+  commands/               test connection, push test page (dev only)
   wiki/
-    types.ts              WikiClient interface, PageInput, RemotePage, UploadedAsset, WikiVersion
-    http.ts               HttpFn abstraction (Obsidian requestUrl in the plugin, fetch in tests) + WikiApiError
-    detect.ts             detectVersion(url): 'v2' | 'v3'
-    factory.ts            createClient(settings, token): resolves the version (auto/manual) → client
-    upsert.ts             upsertPage(client, input): look up by path → create or update
+    types.ts              WikiClient interface, WikiConfig, PageInput, RemotePage, UploadedAsset
+    http.ts               HttpFn abstraction + WikiApiError (no Obsidian import: testable in Node)
+    obsidian-http.ts      HttpFn over Obsidian's requestUrl
+    detect.ts             detectVersion(http, url): 'v2' | 'v3'
+    factory.ts            createClient (auto/manual version), testConnection
+    paths.ts              path validation and slugify helpers
+    base-client.ts        BaseWikiClient: shared logic (upsertPage: look up by path → create or update)
     v2/client.ts          GraphQL implementation
+    v2/multipart.ts       multipart body builder for uploads
     v3/client.ts          REST implementation (site id resolved lazily, render after save)
     v3/path-hash.ts       cyrb53 port
   publish/  (M3+)         path mapping, note → PageInput, conversion, bulk planner
-  commands/ (M3+)         command and context menu registration
   ui/       (M3+)         destination modal, progress
+tests/
+  unit/                   no network (`just test`, run in CI)
+  integration/            against the docker wikis (`just test-integration`)
+  helpers/                fake and fetch-based HttpFn
 ```
 
 ```ts
 interface WikiClient {
 	readonly version: WikiVersion;
-	checkConnection(): Promise<{ version: string; site?: string }>;
-	getPageByPath(path: string, locale?: string): Promise<RemotePage | null>;
+	checkConnection(): Promise<ConnectionInfo>;
+	getPageByPath(path: string): Promise<RemotePage | null>; // in the configured locale
 	createPage(input: PageInput): Promise<RemotePage>;
 	updatePage(id: string, input: PageInput): Promise<RemotePage>; // ids are strings (v2 integers are converted)
 	deletePage(id: string): Promise<void>;
@@ -152,6 +166,25 @@ Gotchas found so far on v3 (3.0.2):
 | Token check | `system.info` query (admin only, so it also checks for full access). A bad key gets HTTP 200 with a `Forbidden` GraphQL error. | `GET /sites/:id/pages/search?limit=1` (needs the `pages` scope): 401 with a reason (`Token is malformed.`, `The API is disabled.`…), 403 for a missing scope |
 | Server version | `system.info.currentVersion` | Only in `/_api/system/info` (admin session) or the 512 KB OpenAPI spec (`info.version`): not fetched, the plugin only reports the site |
 
+Gotchas found on v2 (2.5.x):
+
+- `pages.singleByPath` on a missing page returns `null` with a GraphQL error whose `extensions.exception.code` is `6003`.
+- Mutations report failures in `responseResult { succeeded message }`, with HTTP 200 and no GraphQL error.
+- `pages.update` **unpublishes the page** when `isPublished` is left out: always send `isPublished: true` (and `isPrivate: false`). Caught in manual testing; the integration tests now check that an updated page is still publicly readable.
+- `POST /u` (multipart, field `mediaUpload` sent twice: `{"folderId":N}` then the file) only answers `ok`. Wiki.js lowercases the file name and replaces spaces with `_`, so read the stored name back with `assets.list(folderId)`. Same-name uploads overwrite.
+- Asset folders: `assets.folders(parentFolderId)` and `assets.createFolder(parentFolderId, slug, name)` (slug is lowercased; creating an existing one fails with `succeeded: false`). Root folder id is `0`. Assets are served at `/<folder slugs>/<file name>`.
+
+Both versions sanitize SVG files on upload (the stored file differs from the one sent).
+
+### Callouts
+
+Checked on the dev instances (2026-11-05) by rendering the same content on both:
+
+- **v3** renders both `> text` + `{.is-info}` and GitHub alerts (`> [!NOTE]`, `[!TIP]`, `[!WARNING]`…), both as `<blockquote class="is-info">` (alerts add a `<p class="alert-title">` heading). Its Markdown editor toolbar inserts GitHub alerts, so that is the syntax v3 now favours.
+- **v2** does not know GitHub alerts: `> [!NOTE]` renders as a plain blockquote with the literal text `[!NOTE]`. Only `{.is-info}` / `{.is-success}` / `{.is-warning}` / `{.is-danger}` work.
+
+Obsidian callouts (`> [!note]`, `> [!tip]-` foldable, custom titles, many types) are close to GitHub alerts, but types must be mapped onto the smaller set each version supports.
+
 ### Path constraint
 
 v3 only allows letters, digits, `-`, `_`, spaces and `/` in paths: no dots. It lowercases paths and replaces spaces with hyphens on save. The plugin slugifies paths the same way for both versions: lowercase, spaces → `-`, other punctuation removed, `.md` dropped. So `test.md` becomes page `some/path/test`.
@@ -161,4 +194,7 @@ v3 only allows letters, digits, `-`, `_`, spaces and `/` in paths: no dots. It l
 - **2026-11-04 – v3 rendering:** save the Markdown, then ask the server to render it (`POST .../render`). We don't bundle a Markdown renderer. If the instance has no Puppeteer (503), the plugin warns and the page stays unrendered until it is edited.
 - **2026-11-04 – Credentials:** a single **API token** setting. It is an API key on v2 and a personal access token on v3. It is stored with Obsidian's secret storage.
 - **2026-11-04 – Version:** auto-detection by default, with a manual override setting.
+- **2026-11-05 – Page updates on v2** force `editor: "markdown"`, since the content sent is always Markdown. v3 leaves the editor alone (Markdown and Visual share one source).
+- **2026-11-05 – File and folder names** are slugified by the plugin (`toWikiPath`, `toAssetFileName`) before being sent, so both versions store predictable names. The plugin still links to the name each server reports back.
+- **2026-11-05 – Tooling:** esbuild bumped from 0.25.5 to 0.28.2 (required by vitest 5). Tests live in `tests/` (included in `tsconfig.json`, Obsidian lint rules relaxed there since they run in Node).
 - **2026-11-04 – Page lookup:** pages are looked up by path on every push. No wiki ids are stored in the notes, so moving to another instance or from v2 to v3 doesn't leave stale ids.

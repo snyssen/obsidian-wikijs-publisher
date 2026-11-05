@@ -1,4 +1,5 @@
 import { Plugin } from 'obsidian';
+import { pushTestPage } from './commands/push-test-page';
 import { runConnectionTest } from './commands/test-connection';
 import {
 	DEFAULT_SETTINGS,
@@ -20,6 +21,14 @@ export default class WikiJsPublisherPlugin extends Plugin {
 			name: 'Test connection',
 			callback: () => void runConnectionTest(this),
 		});
+
+		if (__DEV__) {
+			this.addCommand({
+				id: 'dev-push-test-page',
+				name: 'Push test page (dev)',
+				callback: () => void pushTestPage(this),
+			});
+		}
 	}
 
 	async loadSettings() {
@@ -35,8 +44,8 @@ export default class WikiJsPublisherPlugin extends Plugin {
 	}
 
 	getWikiConfig(): WikiConfig {
-		const { wikiUrl, apiTokenSecret, apiVersion } = this.settings;
+		const { wikiUrl, apiTokenSecret, apiVersion, locale } = this.settings;
 		const token = apiTokenSecret ? this.app.secretStorage.getSecret(apiTokenSecret) : null;
-		return { url: wikiUrl, token: token ?? '', version: apiVersion };
+		return { url: wikiUrl, token: token ?? '', version: apiVersion, locale };
 	}
 }

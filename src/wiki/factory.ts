@@ -10,8 +10,8 @@ export async function createClient(http: HttpFn, config: WikiConfig): Promise<Wi
 
 	const version = config.version === 'auto' ? await detectVersion(http, config.url) : config.version;
 	return version === 'v3'
-		? new V3Client(http, config.url, config.token)
-		: new V2Client(http, config.url, config.token);
+		? new V3Client(http, config.url, config.token, config.locale)
+		: new V2Client(http, config.url, config.token, config.locale);
 }
 
 /** Connects with the configured settings, also checking that a manually set version matches the server. */

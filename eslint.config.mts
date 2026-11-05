@@ -19,6 +19,8 @@ export default defineConfig(
 		languageOptions: {
 			globals: {
 				...globals.browser,
+				// Build-time constant defined by esbuild.config.mjs
+				__DEV__: 'readonly',
 			},
 			parserOptions: {
 				projectService: {
@@ -30,4 +32,17 @@ export default defineConfig(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	{
+		// Tests run in Node, not in Obsidian
+		files: ['tests/**/*.ts'],
+		languageOptions: {
+			globals: {
+				...globals.node,
+			},
+		},
+		rules: {
+			'obsidianmd/no-nodejs-modules': 'off',
+			'no-restricted-globals': 'off',
+		},
+	},
 );
