@@ -37,9 +37,12 @@ export async function pushNote(plugin: WikiJsPublisherPlugin, file: TFile): Prom
 	if (destination !== null) await runPush(plugin, [{ file, path: notePagePath(destination, file.basename) }]);
 }
 
-/** Pushes the notes of a folder, keeping their folders: `<destination>/<folder path>/<note path>`. */
+/**
+ * Pushes the notes of a folder, keeping their folders: `<destination>/<folder path>/<note path>`.
+ * Notes set to `false` are left out.
+ */
 export async function pushFolder(plugin: WikiJsPublisherPlugin, folder: TFolder): Promise<void> {
-	const files = notesIn(folder);
+	const files = notesIn(folder).filter((file) => noteDestination(plugin, file)?.kind !== 'excluded');
 	if (files.length === 0) {
 		new Notice(`${folder.name} has no notes to push.`);
 		return;
