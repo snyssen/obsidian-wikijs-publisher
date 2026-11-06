@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/snyssen/obsidian-wikijs-publisher/compare/0.1.0...0.2.0) (2026-11-06)
+
+
+### Features
+
+* add explicit "broken link" on links to notes that are not published or not found ([2216bde](https://github.com/snyssen/obsidian-wikijs-publisher/commit/2216bde62f0f7d67864a115a637fff2c29ff9c07))
+* implement nulk push (M5) - allows for push by folder or by frontmatter property ([a289597](https://github.com/snyssen/obsidian-wikijs-publisher/commit/a2895971dd1c164f0b25f9ae160036160c7444d6))
+
 ## 0.1.0 (2026-11-05)
 
 
