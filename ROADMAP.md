@@ -7,8 +7,8 @@ This is the reference document for the development of the Wiki.js Publisher plug
 Push notes from an Obsidian vault to a Wiki.js instance:
 
 - **What to push:** a single note, a folder, or every note that has a given frontmatter property (e.g. `publish-to-wikijs: true`).
-- **Where:** the destination path on the wiki is chosen per push. Pushing note `test.md` to `some/path` creates page `some/path/test`. Pushing folder `my/notes/` (containing `readme.md` and `guides/first.md`) to `some/path` creates `some/path/my/notes/readme` and `some/path/my/notes/guides/first`. These rules may be refined later.
-- **One-way:** Obsidian always wins. Existing wiki pages are overwritten, even if they were edited on the wiki.
+- **Where:** the destination path on the wiki is chosen per push, or stored per note in the publishing property (M6). Pushing note `test.md` to `some/path` creates page `some/path/test`. Pushing folder `my/notes/` (containing `readme.md` and `guides/first.md`) to `some/path` creates `some/path/my/notes/readme` and `some/path/my/notes/guides/first`.
+- **One-way:** Obsidian is the source. Pages pushed from a note are overwritten, even if they were edited on the wiki (other pages in the way are only replaced after asking, see M6).
 - **Conversion:** Obsidian syntax is converted to something Wiki.js understands: at least `[[wikilinks]]` to Markdown links, and attachments uploaded and linked.
 - **Wiki.js versions:** v3 first, v2 also supported, behind a single abstraction. The version is detected automatically, or set manually.
 
@@ -22,7 +22,7 @@ Push notes from an Obsidian vault to a Wiki.js instance:
 - [x] **M5 – Bulk push**
 - [x] **M6 – Automatic push**
 - [ ] **M7 – Polish & release**  ← in progress
-- [ ] **M8 – Folder notes** (after 1.0)
+- [ ] **M8 – Folder notes** (after the first release)
 
 ## Milestones
 
@@ -63,7 +63,7 @@ Push notes from an Obsidian vault to a Wiki.js instance:
 
 ### M3 – Push a single note
 
-- [x] Command **Push current note** (`push-note`, available when a Markdown note is active) and a **Push to Wiki.js** entry in the file context menu (`src/commands/index.ts`, `push-note.ts`)
+- [x] Command **Push current note** (`push-note`, available when a Markdown note is active) and a **Push to Wiki.js** entry in the file context menu (`src/commands/index.ts`, `push.ts`)
 - [x] Destination modal (`src/ui/destination-modal.ts`): prefilled with the last used destination (`lastDestination`, kept in `data.json` but not shown in the settings tab), else the default destination; previews the resulting page path and validates it; Enter pushes
 - [x] Path mapping and slugify (see [path constraint](#path-constraint)): `<destination>/<note name>`, e.g. `Some/Path` + `My note.md` → `some/path/my-note` (`src/publish/note.ts`, unit tested)
 - [x] Title from frontmatter `title`, else the file name; `description` and `tags` from frontmatter too (a list or a comma/space separated string, `#` dropped)
@@ -103,7 +103,7 @@ Known limitations, documented rather than fixed:
 ### M5 – Bulk push
 
 - [x] Folder push: **Push folder to Wiki.js** in the folder context menu, mapped as `<destination>/<folder path>/<note path>` (`vaultPagePath`), subfolders included
-- [x] Frontmatter property push: command **Push notes marked for publishing** (`push-marked-notes`), for notes whose property (setting, default `publish-to-wikijs`) is `true` or any value but `false`/empty (`isMarkedForPublishing`). Mapped as `<destination>/<vault path>`, like a folder push from the vault root (M6 will refine destinations with the property's value)
+- [x] Frontmatter property push: command **Push notes marked for publishing** (`push-marked-notes`), for notes whose property (setting, default `publish-to-wikijs`) is `true` or any value but `false`/empty (`isMarkedForPublishing`). Mapped as `<destination>/<vault path>`, like a folder push from the vault root. *Superseded in M6: the property's value is now each note's destination (`parseDestination`)*
 - [x] One push engine for every kind of push (`src/publish/push.ts`): one client, notes pushed one after the other, sorted by path; the single-note push is a push of one
 - [x] Links between notes of the same push resolve to their new pages: the planned paths are consulted before the registry
 - [x] Attachments uploaded once per push (upload cache shared by the notes)
@@ -143,10 +143,14 @@ Refined with the user on 2026-11-06. The value of the publishing property (`publ
 
 ### M7 – Polish & release
 
-- [ ] README: disclose network use and what is sent (Obsidian developer policies)
+- [x] README rewritten for users: features, BRAT and manual installation, setup (API token on each version), usage (push, publishing property, destinations, moves, existing pages, automatic push), conversion table, known limitations, network use and privacy (Obsidian developer policies). Development docs kept below. Screenshots in `docs/images/`
+- [x] Folder push leaves out notes set to `false`, as the **Exclude** confirmation promises
+- [x] Screenshots added to `docs/images/` (author)
+- [x] License: MIT (replaces the sample plugin's 0-BSD notice)
 - [ ] Error messages reviewed
 - [ ] Mobile smoke test
-- [ ] Release 1.0.0 through the release workflow (Release Please: a `feat!:` commit or `Release-As: 1.0.0` in a commit body)
+- [ ] Release **0.3.0 (alpha)** through the release workflow: the release PR Release Please opens after the M6 `feat:` commit already proposes 0.3.0 (`bump-minor-pre-major`), so merging it is enough
+- [ ] Later, once the plugin has seen real use: 1.0.0 (`Release-As: 1.0.0` in a commit body) and submission to the community catalog
 
 ### M8 – Folder notes
 
@@ -157,10 +161,9 @@ Refined with the user on 2026-11-06. The value of the publishing property (`publ
 
 ### Later / open questions
 
-- Renames and deletions propagated to the wiki
-- Where to put a note's attachments on the wiki (M4): on v3, asset folders and pages share one tree, so an asset folder can't have the same path as a page, and **asset folders show up in the wiki's navigation** like page folders (v2 hides them). The dev command uses `<page path>-assets`, which adds one navigation entry per page: probably not what we want for real notes.
+- Deletions propagated to the wiki (renames and moves are, since M6: the page is moved)
+- Updating pages that link to a note pushed manually for the first time (automatic push already does it)
 - Pages using a non-Markdown editor on v3 (e.g. HTML): updating them with Markdown content is untested. Markdown and Visual pages are fine (same source).
-- Storing each note's destination in its frontmatter
 - Dry-run preview before pushing
 - Two-way sync
 
@@ -168,10 +171,11 @@ Refined with the user on 2026-11-06. The value of the publishing property (`publ
 
 ```text
 src/
-  main.ts                 lifecycle only: settings, setting tab, commands
+  main.ts                 lifecycle: settings, setting tab, commands, vault events (renames, changes)
+  commands/               push note / folder / marked notes, set destination / exclude, test connection, push test page (dev only)
+    index.ts              command and context menu registration
   settings.ts             settings interface, defaults, declarative tab
   globals.d.ts            __DEV__ build flag (true in dev builds)
-  commands/               push note / folder / marked notes, set destination / exclude, test connection, push test page (dev only)
   wiki/
     types.ts              WikiClient interface, WikiConfig, PageInput, RemotePage, UploadedAsset
     http.ts               HttpFn abstraction + WikiApiError (no Obsidian import: testable in Node)
@@ -184,12 +188,12 @@ src/
     v2/multipart.ts       multipart body builder for uploads
     v3/client.ts          REST implementation (site id resolved lazily, render after save)
     v3/path-hash.ts       cyrb53 port
-  commands/index.ts       command and context menu registration
   convert/                Obsidian Markdown → Wiki.js Markdown (no Obsidian import)
     index.ts              convertMarkdown, referencedLinkpaths
-    dialect.ts            per-version differences: heading ids, tag URLs, highlights, callouts
+    dialect.ts            per-version differences: heading ids, tag URLs, highlights, callouts, math, diagrams
     callouts.ts           callout rewriting, line based, recursive for nested quotes
-    segments.ts           splits code from text, drops %%comments%%
+    segments.ts           splits code and math from text, drops %%comments%%
+    diagrams.ts           Mermaid fences wrapped for v3
     inline.ts             links, embeds, tags, highlights, block ids
   publish/
     note.ts               note → PageInput: path mapping, title/description/tags from frontmatter (no Obsidian import)
@@ -222,6 +226,7 @@ interface WikiClient {
 	updatePage(id: string, input: PageInput): Promise<RemotePage>; // ids are strings (v2 integers are converted)
 	upsertPage(input: PageInput): Promise<RemotePage>; // shared: look up by path, then create or update
 	deletePage(id: string): Promise<void>;
+	movePage(id: string, path: string): Promise<void>; // v3 also rewrites links to the page
 	uploadAsset(folderPath: string, fileName: string, data: ArrayBuffer, mimeType: string): Promise<UploadedAsset>;
 }
 ```
@@ -292,12 +297,13 @@ v3 only allows letters, digits, `-`, `_`, spaces and `/` in paths: no dots. It l
 - **2026-11-04 – v3 rendering:** save the Markdown, then ask the server to render it (`POST .../render`). We don't bundle a Markdown renderer. If the instance has no Puppeteer (503), the plugin warns and the page stays unrendered until it is edited.
 - **2026-11-04 – Credentials:** a single **API token** setting. It is an API key on v2 and a personal access token on v3. It is stored with Obsidian's secret storage.
 - **2026-11-04 – Version:** auto-detection by default, with a manual override setting.
+- **2026-11-04 – Page lookup:** pages are looked up by path on every push. No wiki ids are stored in the notes, so moving to another instance or from v2 to v3 doesn't leave stale ids.
 - **2026-11-05 – Page updates on v2** force `editor: "markdown"`, since the content sent is always Markdown. v3 leaves the editor alone (Markdown and Visual share one source).
 - **2026-11-05 – File and folder names** are slugified by the plugin (`toWikiPath`, `toAssetFileName`) before being sent, so both versions store predictable names. The plugin still links to the name each server reports back.
 - **2026-11-05 – Tooling:** esbuild bumped from 0.25.5 to 0.28.2 (required by vitest 5). Tests live in `tests/` (included in `tsconfig.json`, Obsidian lint rules relaxed there since they run in Node).
-- **2026-11-05 – Releases:** Release Please (same workflow as the author's other projects), with the build done by Nix (`nix/packages/wikijs-publisher/`) so another CI (argunix) can take it over later. Tags have no leading `v` (Obsidian requirement). Versions start at `0.x` until M7's 1.0.0; until then the plugin is installed with BRAT. The sample's npm matrix lint workflow, Nix devshell workflow and tag-triggered release workflow were merged into `build-release.yaml`; `version-bump.mjs` and the empty `styles.css` were removed.
+- **2026-11-05 – Releases:** Release Please (same workflow as the author's other projects), with the build done by Nix (`nix/packages/wikijs-publisher/`) so another CI (argunix) can take it over later. Tags have no leading `v` (Obsidian requirement). Versions start at `0.x`; until 1.0.0 (see *Alpha release*) the plugin is installed with BRAT. The sample's npm matrix lint workflow, Nix devshell workflow and tag-triggered release workflow were merged into `build-release.yaml`; `version-bump.mjs` and the empty `styles.css` were removed.
 - **2026-11-05 – Single note push:** the frontmatter is parsed from the file content just read (`getFrontMatterInfo` + `parseYaml`), not from the metadata cache, which can lag behind recent edits. Invalid YAML fails the push with a clear message rather than pushing the raw block.
-- **2026-11-05 – Links (M4):** links to notes resolve through a **push registry** (where each note was last pushed, per wiki URL, in `data.json`, kept up to date on vault renames). Notes never pushed to that wiki become their text plus a superscript `⛓️‍💥 broken link` marker (added 2026-11-06, so the reader sees a link was meant to be there). Pushing a note doesn't update the pages that link to it: push them again.
+- **2026-11-05 – Links (M4):** links to notes resolve through a **push registry** (where each note was last pushed, per wiki URL, in `data.json`, kept up to date on vault renames). Notes never pushed to that wiki become their text plus a superscript `⛓️‍💥 broken link` marker (added 2026-11-06, so the reader sees a link was meant to be there). Pushing a note doesn't update the pages that link to it: push them again (automatic push does it since M6).
 - **2026-11-05 – Attachments (M4):** uploaded to **one shared folder** (setting, default `attachments`) under their vault folder, so same-named files don't clash and v3 gets a single navigation entry. Uploaded on every push (same name overwrites).
 - **2026-11-05 – Note embeds (M4):** become links to the embedded note, not inlined content.
 - **2026-11-05 – Conversion without a Markdown parser:** a small scanner protects code (fences, inline spans) and drops comments; the rules are regexes on the remaining text, callouts are rewritten line by line. Keeps the bundle small and the behaviour easy to test. No regex lookbehind (unsupported on iOS < 16.4, enforced by the Obsidian lint rules).
@@ -305,4 +311,4 @@ v3 only allows letters, digits, `-`, `_`, spaces and `/` in paths: no dots. It l
 - **2026-11-06 – Destinations (M6):** the publishing property holds the destination (see the M6 table). Values are written already slugified, and slugified again at push time with a warning when that changes them. Folder destinations leave out the clicked folder's own name.
 - **2026-11-06 – Overwrites (M6):** the push registry decides: a page is overwritten silently only if this note pushed it; any other page in the way is a collision the user decides on. This replaces "Obsidian always wins" (which predates the registry). A note whose path changed has its page moved (keeping history; v3 also rewrites links to it).
 - **2026-11-06 – Automatic push (M6):** one shared debounce timer, runs never overlap, the queue is saved in `data.json` for mobile (apps get suspended or killed in the background). Wiki unreachable: the notes go back in the queue and the error is shown once.
-- **2026-11-04 – Page lookup:** pages are looked up by path on every push. No wiki ids are stored in the notes, so moving to another instance or from v2 to v3 doesn't leave stale ids.
+- **2026-11-06 – Alpha release:** the first public release is 0.3.0, labelled alpha in the README, rather than 1.0.0: the plugin hasn't seen real-world use yet. 1.0.0 and the community catalog come later.

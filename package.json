@@ -12,7 +12,7 @@
 		"test:integration": "vitest run tests/integration"
 	},
 	"keywords": [],
-	"license": "0-BSD",
+	"license": "MIT",
 	"devDependencies": {
 		"@eslint/js": "9.39.5",
 		"@types/node": "26.6.6",
