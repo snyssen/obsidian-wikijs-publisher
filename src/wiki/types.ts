@@ -57,6 +57,8 @@ export interface WikiClient {
 	/** Creates the page, or overwrites it if one already exists at the same path: Obsidian always wins. */
 	upsertPage(input: PageInput): Promise<RemotePage>;
 	deletePage(id: string): Promise<void>;
+	/** Moves a page to another path, keeping its history. The path must be free. */
+	movePage(id: string, path: string): Promise<void>;
 	/**
 	 * Uploads a file into `folderPath` (created if missing, `''` for the root), overwriting any file
 	 * with the same name. The folder path should go through `toWikiPath` and the name through

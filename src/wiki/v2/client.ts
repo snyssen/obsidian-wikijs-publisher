@@ -105,6 +105,14 @@ export class V2Client extends BaseWikiClient {
 		checkResult(data.pages.delete.responseResult);
 	}
 
+	async movePage(id: string, path: string): Promise<void> {
+		const data = await this.graphql<{ pages: { move: { responseResult: ResponseResult } } }>(
+			'mutation ($id: Int!, $path: String!, $locale: String!) { pages { move(id: $id, destinationPath: $path, destinationLocale: $locale) { responseResult { succeeded message } } } }',
+			{ id: toIntId(id), path, locale: this.locale },
+		);
+		checkResult(data.pages.move.responseResult);
+	}
+
 	async uploadAsset(folderPath: string, fileName: string, data: ArrayBuffer, mimeType: string): Promise<UploadedAsset> {
 		const folderId = await this.getFolderId(folderPath);
 		// The `mediaUpload` field is sent twice: first the target folder, then the file

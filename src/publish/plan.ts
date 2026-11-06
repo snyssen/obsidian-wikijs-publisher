@@ -22,9 +22,3 @@ export function planErrors(pages: PlannedPage[]): Map<string, string> {
 	}
 	return errors;
 }
-
-/** Whether a frontmatter value marks a note for publishing: `true`, or a non-empty value other than `false`. */
-export function isMarkedForPublishing(value: unknown): boolean {
-	if (typeof value === 'string') return value.trim() !== '' && value.trim().toLowerCase() !== 'false';
-	return value !== undefined && value !== null && value !== false;
-}

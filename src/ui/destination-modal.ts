@@ -7,6 +7,10 @@ interface DestinationOptions {
 	initial: string;
 	/** Where pages go for a valid destination (shown as a preview), or why it can't be used. */
 	describe: (destination: string) => { preview: string } | { error: string };
+	/** An extra on/off option, which the preview may depend on. */
+	toggle?: { name: string; desc: string; value: boolean; onChange: (value: boolean) => void };
+	/** Label of the confirmation button. */
+	cta?: string;
 }
 
 /** Asks where to push. Resolves to the destination, or null if the modal was dismissed. */
@@ -56,11 +60,24 @@ class DestinationModal extends Modal {
 			window.setTimeout(() => text.inputEl.select(), 0);
 		});
 
+		const { toggle } = this.options;
+		if (toggle) {
+			new Setting(this.contentEl)
+				.setName(toggle.name)
+				.setDesc(toggle.desc)
+				.addToggle((control) =>
+					control.setValue(toggle.value).onChange((value) => {
+						toggle.onChange(value);
+						refresh();
+					}),
+				);
+		}
+
 		new Setting(this.contentEl)
 			.addButton((button) => button.setButtonText('Cancel').onClick(() => this.close()))
 			.addButton((button) => {
 				submitButton = button.buttonEl;
-				button.setButtonText('Push').setCta().onClick(() => this.submit());
+				button.setButtonText(this.options.cta ?? 'Push').setCta().onClick(() => this.submit());
 			});
 
 		refresh();

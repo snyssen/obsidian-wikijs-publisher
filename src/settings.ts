@@ -13,12 +13,21 @@ export interface WikiJsPublisherSettings {
 	locale: string;
 	defaultDestination: string;
 	attachmentFolder: string;
-	/** Frontmatter property that marks notes for publishing. */
+	/** Frontmatter property that marks notes for publishing, and holds their destination. */
 	publishProperty: string;
+	/** Update explicit destinations when notes move to another folder. */
+	followMoves: boolean;
+	autoPush: boolean;
+	/** Seconds without changes before an automatic push. */
+	autoPushDelay: number;
+	/** Notes waiting for an automatic push (see AutoPusher). Not shown in the settings tab. */
+	autoPushQueue?: string[];
 	/** Destination of the last push, prefilled next time. Not shown in the settings tab. */
 	lastDestination?: string;
 	/** Where notes were pushed (see PushRegistry). Not shown in the settings tab. */
 	pushedPages?: PushRegistryData;
+	/** Pages the user refused to overwrite (see PushRegistry). Not shown in the settings tab. */
+	declinedOverwrites?: PushRegistryData;
 }
 
 export const DEFAULT_SETTINGS: WikiJsPublisherSettings = {
@@ -29,6 +38,9 @@ export const DEFAULT_SETTINGS: WikiJsPublisherSettings = {
 	defaultDestination: '',
 	attachmentFolder: 'attachments',
 	publishProperty: 'publish-to-wikijs',
+	followMoves: true,
+	autoPush: false,
+	autoPushDelay: 10,
 };
 
 type SettingKey = keyof WikiJsPublisherSettings;
@@ -110,13 +122,34 @@ export class WikiJsPublisherSettingTab extends PluginSettingTab {
 					},
 					{
 						name: 'Publishing property',
-						desc: 'Frontmatter property that marks the notes pushed by the "Push notes marked for publishing" command.',
+						desc: 'Frontmatter property that marks the notes to publish: false to exclude a note, a path starting with / for its destination, anything else for the default destination.',
 						control: {
 							type: 'text',
 							key: 'publishProperty',
 							placeholder: 'publish-to-wikijs',
 							validate: (value) => (value.trim() === '' ? 'Enter a property name' : undefined),
 						},
+					},
+					{
+						name: 'Update destinations when notes move',
+						desc: 'When a note moves to another folder, update its destination if it follows the folders (as set on a folder).',
+						control: { type: 'toggle', key: 'followMoves' },
+					},
+				],
+			},
+			{
+				type: 'group',
+				heading: 'Automatic push',
+				items: [
+					{
+						name: 'Push automatically',
+						desc: 'Push marked notes to the wiki after they change. Notes set to false are never pushed.',
+						control: { type: 'toggle', key: 'autoPush' },
+					},
+					{
+						name: 'Delay',
+						desc: 'Seconds without changes before pushing. Notes changed together are pushed together.',
+						control: { type: 'number', key: 'autoPushDelay', min: 1, max: 600, step: 1, placeholder: '10' },
 					},
 				],
 			},

@@ -92,6 +92,12 @@ export class V3Client extends BaseWikiClient {
 		await this.request('DELETE', `/sites/${site.id}/pages/${id}`);
 	}
 
+	async movePage(id: string, path: string): Promise<void> {
+		const site = await this.getSite();
+		// updateLinks: pages linking to the old path are edited to point to the new one
+		await this.request('PUT', `/sites/${site.id}/pages/${id}/path`, { path, updateLinks: true });
+	}
+
 	async uploadAsset(folderPath: string, fileName: string, data: ArrayBuffer, mimeType: string): Promise<UploadedAsset> {
 		const site = await this.getSite();
 		const query = new URLSearchParams({ fileName });

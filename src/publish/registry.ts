@@ -4,7 +4,11 @@ export type PushedPages = Record<string, string>;
 /** Pushed pages of every wiki pushed to, by wiki URL: links resolve against the wiki being pushed to. */
 export type PushRegistryData = Record<string, PushedPages>;
 
-/** Where notes were last pushed, so links between notes point to the right pages. */
+/**
+ * Wiki paths of notes, per wiki, kept in `data.json`. Used for where notes were last pushed (so links
+ * between notes point to the right pages, and pages are moved rather than duplicated), and for the
+ * overwrites the user refused.
+ */
 export class PushRegistry {
 	constructor(
 		private readonly data: PushRegistryData,
@@ -20,15 +24,23 @@ export class PushRegistry {
 		await this.save();
 	}
 
-	/** Follows a note renamed or moved in the vault: its page stays where it is on the wiki. */
+	async delete(wikiUrl: string, vaultPath: string): Promise<void> {
+		const pages = this.data[key(wikiUrl)];
+		if (pages?.[vaultPath] === undefined) return;
+		delete pages[vaultPath];
+		await this.save();
+	}
+
+	/** Follows a note (or a folder of notes) renamed or moved in the vault. */
 	async rename(oldPath: string, newPath: string): Promise<void> {
 		let changed = false;
 		for (const pages of Object.values(this.data)) {
-			const wikiPath = pages[oldPath];
-			if (wikiPath === undefined) continue;
-			delete pages[oldPath];
-			pages[newPath] = wikiPath;
-			changed = true;
+			for (const [vaultPath, wikiPath] of Object.entries(pages)) {
+				if (vaultPath !== oldPath && !vaultPath.startsWith(`${oldPath}/`)) continue;
+				delete pages[vaultPath];
+				pages[newPath + vaultPath.slice(oldPath.length)] = wikiPath;
+				changed = true;
+			}
 		}
 		if (changed) await this.save();
 	}

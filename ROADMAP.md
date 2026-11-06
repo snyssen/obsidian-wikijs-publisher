@@ -19,9 +19,9 @@ Push notes from an Obsidian vault to a Wiki.js instance:
 - [x] **M2 – API layer + first test push**
 - [x] **M3 – Push a single note**
 - [x] **M4 – Conversion**
-- [ ] **M5 – Bulk push** ← in progress
-- [ ] **M6 – Automatic push**
-- [ ] **M7 – Polish & release**
+- [x] **M5 – Bulk push**
+- [x] **M6 – Automatic push**
+- [ ] **M7 – Polish & release**  ← in progress
 - [ ] **M8 – Folder notes** (after 1.0)
 
 ## Milestones
@@ -113,11 +113,33 @@ Known limitations, documented rather than fixed:
 
 ### M6 – Automatic push
 
-> **Needs refinement before work starts:** the behaviour below is a first idea, not settled yet.
+Refined with the user on 2026-11-06. The value of the publishing property (`publish-to-wikijs`) is the note's **destination**:
 
-- [ ] Setting (off by default) to push notes automatically when they change, debounced, for notes that have the `publish-to-wikijs` frontmatter property (same property as M5's bulk push)
-- [ ] The destination comes from the property's value, e.g. `publish-to-wikijs: some/path`. An empty value (or `true`) pushes to the wiki root or to the default destination: to be decided
-- [ ] Open points: what happens on rename/move and when the property is removed; error reporting without spamming notices; interaction with links to notes that aren't published
+| Value | Meaning |
+|---|---|
+| `false` | Never pushed (excluded, also from automatic push) |
+| `/some/path` (starts with `/`) | Pushed to `/some/path/<note name>`; `/` alone is the wiki root. Slugified again at push time: a value that changes (e.g. `/My Campaign` → `/my-campaign`) gives a warning naming the note |
+| `true`, empty, anything else | Pushed under the default destination (a value without leading `/` gives a warning: probably a typo) |
+
+- [x] **Destinations from the property**: `parseDestination` (pure, unit tested); **Push notes marked for publishing** uses each note's destination (confirmation with the count, no destination prompt); **Push current note** is prefilled with the note's destination. Push results carry warnings, and every warning or error names its note
+- [x] **Set Wiki.js destination**:
+  - on a folder (folder menu): writes `/` + slugified `<destination>/<note folder relative to the clicked folder>` on every note below it (e.g. folder `Events` → `/campaign`: `Events/Events.md` gets `/campaign`, `Events/Partie 0/x.md` gets `/campaign/partie-0`). Toggle **Only notes that already have the property**. Notes set to `false` are skipped
+  - on a note (file menu and command): writes the slugified destination; asks first if the note is set to `false`
+  - written with `fileManager.processFrontMatter`, already slugified (what you read is where the page goes)
+- [x] **Exclude from Wiki.js** (folder menu, file menu, command): writes `false` (folder: after a confirmation with the count). Pages already on the wiki are left alone
+- [x] **Destinations follow moves** (setting, on by default): when a note moves to another folder and its value follows the folder structure, the changed folder segments are replaced (`Events/Partie 0` → `Events/Partie 1`: `/campaign/partie-0` → `/campaign/partie-1`); other values are left alone. Batched: one notice per move, even for a whole folder
+- [x] **Pages are moved, not duplicated**: when a note's path changes (rename, move, edited destination), its existing page is moved (`WikiClient.movePage`: v3 `PUT /pages/:id/path` with `updateLinks`, v2 `pages.move`)
+- [x] **No overwrite without the registry's approval**: a page is only overwritten silently if the registry says this note pushed it. Any other page at the target path is a **collision**: one modal per push lists them, with **Replace** / **Skip** / **Exclude** per note or for all. Refusals are remembered (`data.json`): automatic push skips them silently, a manual push asks again; forgotten when the note's target changes
+- [x] **Automatic push** (setting, off by default; delay setting, default 10 s): changed marked notes are queued (`metadataCache` `changed`), one shared debounce timer, one push run for all queued notes, runs never overlap. The queue is saved in `data.json` (mobile apps get suspended) and resumed at start-up
+- [x] **Broken links heal**: a note pushed for the first time also re-pushes its marked backlinks already on the wiki, so their broken-link markers become links
+- [x] **Quiet reporting**: successful automatic pushes are silent; desktop status bar shows the state (pushing / pushed at / failed); one notice per failed run; the last report can be reopened
+- [x] Unit tests (`tests/unit/destinations.test.ts`: values, folder destinations, move inference; `registry.test.ts`), integration test of the page move on both wikis. The collision logic lives in the push engine, which needs Obsidian: covered by the manual check
+- [x] Manual check in the throwaway Obsidian, on both instances:
+  1. **Set Wiki.js destination** on a folder (try **Only notes that already have the property**), on a single note, and on a note set to `false` (asks first). Hand-edit a value to `/My Campaign` and push: warning naming the note, pushed under `/my-campaign`. **Exclude from Wiki.js** on a folder and a note
+  2. Move a note to a sibling folder, then move a folder: destinations follow, one notice per move
+  3. **Push notes marked for publishing**, then rename a note and push again: the page is moved, not duplicated. Push a note onto a page the plugin didn't create: the collisions modal opens; try **Skip**, **Replace the page** and **Exclude the note**
+  4. Turn on **Push automatically**, edit a marked note: pushed after the delay, silently (status bar). Skip a collision: no modal on the next runs, a manual push asks again
+  5. Push a new note that a pushed note links to, automatically: the other note's broken-link marker becomes a link
 
 ### M7 – Polish & release
 
@@ -149,7 +171,7 @@ src/
   main.ts                 lifecycle only: settings, setting tab, commands
   settings.ts             settings interface, defaults, declarative tab
   globals.d.ts            __DEV__ build flag (true in dev builds)
-  commands/               push note / folder / marked notes, test connection, push test page (dev only)
+  commands/               push note / folder / marked notes, set destination / exclude, test connection, push test page (dev only)
   wiki/
     types.ts              WikiClient interface, WikiConfig, PageInput, RemotePage, UploadedAsset
     http.ts               HttpFn abstraction + WikiApiError (no Obsidian import: testable in Node)
@@ -173,12 +195,18 @@ src/
     note.ts               note → PageInput: path mapping, title/description/tags from frontmatter (no Obsidian import)
     registry.ts           PushRegistry: wiki path of each pushed note, per wiki URL
     resolve.ts            link paths → pages (planned or registry) or uploaded attachments
-    plan.ts               checks on planned paths (empty, duplicates), publishing property
-    push.ts               push engine: one client, notes one after the other, per-note results
+    plan.ts               checks on planned paths (empty, duplicates)
+    destinations.ts       publishing property values: parse, folder destinations, moves (no Obsidian import)
+    property.ts           reads and writes the publishing property, marked notes → push items
+    push.ts               push engine: plan (update / move / create / collision), ask, push; per-note results
+    follow-moves.ts       updates destinations when notes move (batched)
+    auto-push.ts          automatic push: queue, shared debounce timer, broken links healing, status
   ui/
     destination-modal.ts  asks where to push, with a page path preview
     notices.ts            pushed-page notice with a link, error message helper
-    push-report.ts        result of a push: notice, or a modal listing the failures
+    push-report.ts        result of a push: notice, or a modal listing failures, skipped notes and warnings
+    collisions-modal.ts   what to do with pages in the way: replace, skip, exclude
+    confirm-modal.ts      generic confirmation
 tests/
   unit/                   no network (`just test`, run in CI)
   integration/            against the docker wikis (`just test-integration`)
@@ -222,6 +250,7 @@ Gotchas found so far on v3 (3.0.2):
 | Assets | Multipart `POST /u` and folder ids (`assets.createFolder`) | Raw body `POST /sites/:id/assets?fileName=&folderPath=`. Folders are created automatically and the file name is normalized, so use the returned name. Served at `/_files/<folderPath>/<file>`. |
 | Version detection | `POST /graphql` answers | `GET /_api/sites/current` returns JSON; `POST /graphql` returns 404 |
 | Token check | `system.info` query (admin only, so it also checks for full access). A bad key gets HTTP 200 with a `Forbidden` GraphQL error. | `GET /sites/:id/pages/search?limit=1` (needs the `pages` scope): 401 with a reason (`Token is malformed.`, `The API is disabled.`…), 403 for a missing scope |
+| Move a page | `pages.move(id, destinationPath, destinationLocale)` | `PUT /sites/:id/pages/:pageId/path` `{ path, updateLinks }` (`updateLinks` rewrites the links of other pages) |
 | Server version | `system.info.currentVersion` | `/_api/system/info` refuses personal access tokens (403); the public OpenAPI spec has it (`info.version`, first bytes of a 512 KB document, `Range` ignored). Fetched by **Test connection** only |
 
 Gotchas found on v2 (2.5.x):
@@ -273,4 +302,7 @@ v3 only allows letters, digits, `-`, `_`, spaces and `/` in paths: no dots. It l
 - **2026-11-05 – Note embeds (M4):** become links to the embedded note, not inlined content.
 - **2026-11-05 – Conversion without a Markdown parser:** a small scanner protects code (fences, inline spans) and drops comments; the rules are regexes on the remaining text, callouts are rewritten line by line. Keeps the bundle small and the behaviour easy to test. No regex lookbehind (unsupported on iOS < 16.4, enforced by the Obsidian lint rules).
 - **2026-11-06 – Bulk push (M5):** notes found by the publishing property keep their vault folders under the destination, like a folder push from the vault root. Notes are pushed sequentially (gentle on the wiki, simple progress). If a note of the push fails, links to it from the others still point to its planned page.
+- **2026-11-06 – Destinations (M6):** the publishing property holds the destination (see the M6 table). Values are written already slugified, and slugified again at push time with a warning when that changes them. Folder destinations leave out the clicked folder's own name.
+- **2026-11-06 – Overwrites (M6):** the push registry decides: a page is overwritten silently only if this note pushed it; any other page in the way is a collision the user decides on. This replaces "Obsidian always wins" (which predates the registry). A note whose path changed has its page moved (keeping history; v3 also rewrites links to it).
+- **2026-11-06 – Automatic push (M6):** one shared debounce timer, runs never overlap, the queue is saved in `data.json` for mobile (apps get suspended or killed in the background). Wiki unreachable: the notes go back in the queue and the error is shown once.
 - **2026-11-04 – Page lookup:** pages are looked up by path on every push. No wiki ids are stored in the notes, so moving to another instance or from v2 to v3 doesn't leave stale ids.

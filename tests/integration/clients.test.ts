@@ -68,6 +68,19 @@ describe.each(instances)('Wiki.js $version', ({ version, url }) => {
 		await client.deletePage(recreated.id);
 	});
 
+	it('moves a page, keeping its id and content', async () => {
+		const client = await getClient();
+		const from = `integration-tests/${run}/move-from`;
+		const to = `integration-tests/${run}/move-to`;
+		const page = await client.createPage({ path: from, title: 'Moved', content: '# Moved' });
+
+		await client.movePage(page.id, to);
+		await expect(client.getPageByPath(from)).resolves.toBeNull();
+		await expect(client.getPageByPath(to)).resolves.toMatchObject({ id: page.id, title: 'Moved' });
+		expect((await fetch(`${url}/${to}`)).status).toBe(200);
+		await client.deletePage(page.id);
+	});
+
 	it('uploads assets into nested folders, overwriting same-name files', async () => {
 		const client = await getClient();
 		const folder = `integration-tests/${run}/assets`;

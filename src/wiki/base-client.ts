@@ -9,6 +9,7 @@ export abstract class BaseWikiClient implements WikiClient {
 	abstract createPage(input: PageInput): Promise<RemotePage>;
 	abstract updatePage(id: string, input: PageInput): Promise<RemotePage>;
 	abstract deletePage(id: string): Promise<void>;
+	abstract movePage(id: string, path: string): Promise<void>;
 	abstract uploadAsset(folderPath: string, fileName: string, data: ArrayBuffer, mimeType: string): Promise<UploadedAsset>;
 
 	async upsertPage(input: PageInput): Promise<RemotePage> {
