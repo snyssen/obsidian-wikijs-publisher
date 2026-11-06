@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/snyssen/obsidian-wikijs-publisher/compare/0.2.0...0.3.0) (2026-11-06)
+
+
+### Features
+
+* add auto-sync (M6) ([90b95b5](https://github.com/snyssen/obsidian-wikijs-publisher/commit/90b95b583b41c342102bebc04c98ea4727f748df))
+
+
+### Bug Fixes
+
+* ensure a note set to be excluded from push is not pushed when one of its parent folder is ([40cfe82](https://github.com/snyssen/obsidian-wikijs-publisher/commit/40cfe82131a116d58035d708fbde8be40e9010b6))
+
 ## [0.2.0](https://github.com/snyssen/obsidian-wikijs-publisher/compare/0.1.0...0.2.0) (2026-11-06)
 
 

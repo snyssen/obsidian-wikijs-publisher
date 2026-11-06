@@ -1,6 +1,6 @@
 {
 	"name": "wikijs-publisher",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "Obsidian plugin to send notes to a Wiki.js instance",
 	"main": "main.js",
 	"type": "module",
