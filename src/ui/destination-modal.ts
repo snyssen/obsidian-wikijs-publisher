@@ -2,10 +2,11 @@ import { App, Modal, Setting } from 'obsidian';
 import { isValidWikiPath } from '../wiki/paths';
 
 interface DestinationOptions {
+	title: string;
 	/** Prefilled destination. */
 	initial: string;
-	/** Wiki path the pushed page gets for a given destination, shown as a preview. */
-	pagePath: (destination: string) => string;
+	/** Where pages go for a valid destination (shown as a preview), or why it can't be used. */
+	describe: (destination: string) => { preview: string } | { error: string };
 }
 
 /** Asks where to push. Resolves to the destination, or null if the modal was dismissed. */
@@ -27,13 +28,14 @@ class DestinationModal extends Modal {
 	}
 
 	onOpen(): void {
-		this.setTitle('Push to Wiki.js');
+		this.setTitle(this.options.title);
 
 		const field = new Setting(this.contentEl).setName('Destination');
 		let submitButton: HTMLButtonElement | undefined;
 		const refresh = () => {
-			const error = this.validate();
-			field.setDesc(error ?? `Page: /${this.options.pagePath(this.destination)}`);
+			const description = this.describe();
+			const error = 'error' in description ? description.error : undefined;
+			field.setDesc(error ?? ('preview' in description ? description.preview : ''));
 			field.descEl.toggleClass('mod-warning', error !== undefined);
 			submitButton?.toggleAttribute('disabled', error !== undefined);
 		};
@@ -69,14 +71,13 @@ class DestinationModal extends Modal {
 		if (!this.submitted) this.resolve(null);
 	}
 
-	private validate(): string | undefined {
-		if (!isValidWikiPath(this.destination)) return 'Only letters, digits, spaces, -, _ and / are allowed';
-		if (this.options.pagePath(this.destination) === '') return 'This note has no letters or digits to name the page with';
-		return undefined;
+	private describe(): { preview: string } | { error: string } {
+		if (!isValidWikiPath(this.destination)) return { error: 'Only letters, digits, spaces, -, _ and / are allowed' };
+		return this.options.describe(this.destination);
 	}
 
 	private submit(): void {
-		if (this.validate() !== undefined) return;
+		if ('error' in this.describe()) return;
 		this.submitted = true;
 		this.resolve(this.destination.trim());
 		this.close();

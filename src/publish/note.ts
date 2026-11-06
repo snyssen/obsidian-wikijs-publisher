@@ -18,11 +18,16 @@ export function notePagePath(destination: string, basename: string): string {
 	return toWikiPath(`${destination}/${basename}`);
 }
 
-export function toPageInput(note: Note, destination: string): PageInput {
-	const path = notePagePath(destination, note.basename);
-	if (path === '') {
-		throw new Error(`"${note.basename}" has no letters or digits to build a wiki path from`);
-	}
+/**
+ * Wiki path of a note pushed with its folders (folder or bulk push): `Some/Path` + `my/notes/Read me.md`
+ * → `some/path/my/notes/read-me`.
+ */
+export function vaultPagePath(destination: string, vaultPath: string): string {
+	return toWikiPath(`${destination}/${vaultPath.replace(/\.md$/i, '')}`);
+}
+
+/** Page for a note, at `path` (see `notePagePath` and `vaultPagePath`). */
+export function toPageInput(note: Note, path: string): PageInput {
 	const frontmatter = isRecord(note.frontmatter) ? note.frontmatter : {};
 	return {
 		path,

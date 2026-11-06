@@ -1,6 +1,6 @@
-import { TFile } from 'obsidian';
+import { TFile, TFolder } from 'obsidian';
 import type WikiJsPublisherPlugin from '../main';
-import { isPushable, pushNote } from './push-note';
+import { isPushable, pushFolder, pushMarkedNotes, pushNote } from './push';
 import { pushTestPage } from './push-test-page';
 import { runConnectionTest } from './test-connection';
 
@@ -17,15 +17,30 @@ export function registerCommands(plugin: WikiJsPublisherPlugin): void {
 		},
 	});
 
+	plugin.addCommand({
+		id: 'push-marked-notes',
+		name: 'Push notes marked for publishing',
+		icon: 'upload-cloud',
+		callback: () => void pushMarkedNotes(plugin),
+	});
+
 	plugin.registerEvent(
 		plugin.app.workspace.on('file-menu', (menu, file) => {
-			if (!(file instanceof TFile) || !isPushable(file)) return;
-			menu.addItem((item) =>
-				item
-					.setTitle('Push to Wiki.js')
-					.setIcon('upload-cloud')
-					.onClick(() => void pushNote(plugin, file)),
-			);
+			if (file instanceof TFile && isPushable(file)) {
+				menu.addItem((item) =>
+					item
+						.setTitle('Push to Wiki.js')
+						.setIcon('upload-cloud')
+						.onClick(() => void pushNote(plugin, file)),
+				);
+			} else if (file instanceof TFolder) {
+				menu.addItem((item) =>
+					item
+						.setTitle('Push folder to Wiki.js')
+						.setIcon('upload-cloud')
+						.onClick(() => void pushFolder(plugin, file)),
+				);
+			}
 		}),
 	);
 

@@ -37,7 +37,22 @@ export class V3Client extends BaseWikiClient {
 		const site = await this.getSite();
 		// Cheapest route that requires a valid token with the `pages` scope
 		await this.request('GET', `/sites/${site.id}/pages/search?limit=1`);
-		return { version: 'v3', site: site.title };
+		return { version: 'v3', serverVersion: await this.getServerVersion(), site: site.title };
+	}
+
+	/**
+	 * Exact server version, or undefined if it can't be read. Tokens can't read `/system/info`: the only
+	 * public source is the OpenAPI spec, a 500 KB document, so this is only for the connection test.
+	 */
+	private async getServerVersion(): Promise<string | undefined> {
+		try {
+			const response = await send(this.http, { url: joinUrl(this.baseUrl, '/_api/json'), method: 'GET' });
+			if (response.status !== 200) return undefined;
+			// `info` comes first: no need to parse the whole document
+			return /"info":\{[^{}]*"version":"([^"]+)"/.exec(response.text.slice(0, 2000))?.[1];
+		} catch {
+			return undefined;
+		}
 	}
 
 	async getPageByPath(path: string): Promise<RemotePage | null> {

@@ -19,9 +19,10 @@ Push notes from an Obsidian vault to a Wiki.js instance:
 - [x] **M2 – API layer + first test push**
 - [x] **M3 – Push a single note**
 - [x] **M4 – Conversion**
-- [ ] **M5 – Bulk push** ← next
+- [ ] **M5 – Bulk push** ← in progress
 - [ ] **M6 – Automatic push**
 - [ ] **M7 – Polish & release**
+- [ ] **M8 – Folder notes** (after 1.0)
 
 ## Milestones
 
@@ -101,11 +102,14 @@ Known limitations, documented rather than fixed:
 
 ### M5 – Bulk push
 
-- [ ] Folder push (folder context menu), mapped as `<destination>/<folder path>/<note path>`
-- [ ] Frontmatter property push (property name configurable, default `publish-to-wikijs`)
-- [ ] Links between notes of the same batch resolved to their wiki pages
-- [ ] Attachments uploaded once per batch
-- [ ] Progress display and a summary of failures
+- [x] Folder push: **Push folder to Wiki.js** in the folder context menu, mapped as `<destination>/<folder path>/<note path>` (`vaultPagePath`), subfolders included
+- [x] Frontmatter property push: command **Push notes marked for publishing** (`push-marked-notes`), for notes whose property (setting, default `publish-to-wikijs`) is `true` or any value but `false`/empty (`isMarkedForPublishing`). Mapped as `<destination>/<vault path>`, like a folder push from the vault root (M6 will refine destinations with the property's value)
+- [x] One push engine for every kind of push (`src/publish/push.ts`): one client, notes pushed one after the other, sorted by path; the single-note push is a push of one
+- [x] Links between notes of the same push resolve to their new pages: the planned paths are consulted before the registry
+- [x] Attachments uploaded once per push (upload cache shared by the notes)
+- [x] Planned paths checked before pushing (`src/publish/plan.ts`): a note whose name gives no path, or the same path as another note of the push, fails instead of overwriting it
+- [x] Progress in the notice (`Pushing 3/12: Note…`); a notice when everything worked, otherwise a modal listing each failed note with its error (`src/ui/push-report.ts`). A failing note doesn't stop the others
+- [x] Manual check in the throwaway Obsidian, on both instances: `Welcome` and `Guides/Getting started` are marked with `publish-to-wikijs` and link to each other: push them with the command, check both links work after a single push; push the `Guides` folder; push a folder with a note that fails (e.g. invalid YAML frontmatter) to see the report
 
 ### M6 – Automatic push
 
@@ -121,6 +125,13 @@ Known limitations, documented rather than fixed:
 - [ ] Error messages reviewed
 - [ ] Mobile smoke test
 - [ ] Release 1.0.0 through the release workflow (Release Please: a `feat!:` commit or `Release-As: 1.0.0` in a commit body)
+
+### M8 – Folder notes
+
+> **Needs refinement before work starts.**
+
+- [ ] Support the [Folder notes](https://lostpaul.github.io/obsidian-folder-notes/) plugin: a folder's note (e.g. `my/notes/notes.md` or `my/notes.md`, depending on its settings) becomes the page of the folder itself (`<destination>/my/notes`) instead of a child page
+- [ ] Open points: detecting the plugin and reading its settings (note name and location), links to the folder note, what to do without the plugin
 
 ### Later / open questions
 
@@ -138,7 +149,7 @@ src/
   main.ts                 lifecycle only: settings, setting tab, commands
   settings.ts             settings interface, defaults, declarative tab
   globals.d.ts            __DEV__ build flag (true in dev builds)
-  commands/               push note, test connection, push test page (dev only)
+  commands/               push note / folder / marked notes, test connection, push test page (dev only)
   wiki/
     types.ts              WikiClient interface, WikiConfig, PageInput, RemotePage, UploadedAsset
     http.ts               HttpFn abstraction + WikiApiError (no Obsidian import: testable in Node)
@@ -161,10 +172,13 @@ src/
   publish/
     note.ts               note → PageInput: path mapping, title/description/tags from frontmatter (no Obsidian import)
     registry.ts           PushRegistry: wiki path of each pushed note, per wiki URL
-    resolve.ts            link paths → pages (registry) or uploaded attachments
+    resolve.ts            link paths → pages (planned or registry) or uploaded attachments
+    plan.ts               checks on planned paths (empty, duplicates), publishing property
+    push.ts               push engine: one client, notes one after the other, per-note results
   ui/
     destination-modal.ts  asks where to push, with a page path preview
     notices.ts            pushed-page notice with a link, error message helper
+    push-report.ts        result of a push: notice, or a modal listing the failures
 tests/
   unit/                   no network (`just test`, run in CI)
   integration/            against the docker wikis (`just test-integration`)
@@ -208,7 +222,7 @@ Gotchas found so far on v3 (3.0.2):
 | Assets | Multipart `POST /u` and folder ids (`assets.createFolder`) | Raw body `POST /sites/:id/assets?fileName=&folderPath=`. Folders are created automatically and the file name is normalized, so use the returned name. Served at `/_files/<folderPath>/<file>`. |
 | Version detection | `POST /graphql` answers | `GET /_api/sites/current` returns JSON; `POST /graphql` returns 404 |
 | Token check | `system.info` query (admin only, so it also checks for full access). A bad key gets HTTP 200 with a `Forbidden` GraphQL error. | `GET /sites/:id/pages/search?limit=1` (needs the `pages` scope): 401 with a reason (`Token is malformed.`, `The API is disabled.`…), 403 for a missing scope |
-| Server version | `system.info.currentVersion` | Only in `/_api/system/info` (admin session) or the 512 KB OpenAPI spec (`info.version`): not fetched, the plugin only reports the site |
+| Server version | `system.info.currentVersion` | `/_api/system/info` refuses personal access tokens (403); the public OpenAPI spec has it (`info.version`, first bytes of a 512 KB document, `Range` ignored). Fetched by **Test connection** only |
 
 Gotchas found on v2 (2.5.x):
 
@@ -258,4 +272,5 @@ v3 only allows letters, digits, `-`, `_`, spaces and `/` in paths: no dots. It l
 - **2026-11-05 – Attachments (M4):** uploaded to **one shared folder** (setting, default `attachments`) under their vault folder, so same-named files don't clash and v3 gets a single navigation entry. Uploaded on every push (same name overwrites).
 - **2026-11-05 – Note embeds (M4):** become links to the embedded note, not inlined content.
 - **2026-11-05 – Conversion without a Markdown parser:** a small scanner protects code (fences, inline spans) and drops comments; the rules are regexes on the remaining text, callouts are rewritten line by line. Keeps the bundle small and the behaviour easy to test. No regex lookbehind (unsupported on iOS < 16.4, enforced by the Obsidian lint rules).
+- **2026-11-06 – Bulk push (M5):** notes found by the publishing property keep their vault folders under the destination, like a folder push from the vault root. Notes are pushed sequentially (gentle on the wiki, simple progress). If a note of the push fails, links to it from the others still point to its planned page.
 - **2026-11-04 – Page lookup:** pages are looked up by path on every push. No wiki ids are stored in the notes, so moving to another instance or from v2 to v3 doesn't leave stale ids.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { notePagePath, parseTags, toPageInput } from '../../src/publish/note';
+import { notePagePath, parseTags, toPageInput, vaultPagePath } from '../../src/publish/note';
 
 describe('notePagePath', () => {
 	it.each([
@@ -11,9 +11,19 @@ describe('notePagePath', () => {
 	});
 });
 
+describe('vaultPagePath', () => {
+	it.each([
+		['some/path', 'my/notes/Read me.md', 'some/path/my/notes/read-me'],
+		['', 'Guides/Getting started.md', 'guides/getting-started'],
+		['dest', 'Top.MD', 'dest/top'],
+	])('%s + %s → %s', (destination, vaultPath, path) => {
+		expect(vaultPagePath(destination, vaultPath)).toBe(path);
+	});
+});
+
 describe('toPageInput', () => {
 	it('defaults the title to the file name', () => {
-		expect(toPageInput({ basename: 'My note', body: '# Hi' }, 'notes')).toEqual({
+		expect(toPageInput({ basename: 'My note', body: '# Hi' }, 'notes/my-note')).toEqual({
 			path: 'notes/my-note',
 			title: 'My note',
 			description: '',
@@ -24,7 +34,7 @@ describe('toPageInput', () => {
 
 	it('reads the title, description and tags from the frontmatter', () => {
 		const frontmatter = { title: ' Custom title ', description: 'About it', tags: ['a', '#b'] };
-		expect(toPageInput({ basename: 'note', frontmatter, body: '' }, '')).toMatchObject({
+		expect(toPageInput({ basename: 'note', frontmatter, body: '' }, 'note')).toMatchObject({
 			title: 'Custom title',
 			description: 'About it',
 			tags: ['a', 'b'],
@@ -33,7 +43,7 @@ describe('toPageInput', () => {
 
 	it('ignores unusable frontmatter values', () => {
 		const frontmatter = { title: '  ', description: 42, tags: { not: 'a list' } };
-		expect(toPageInput({ basename: 'note', frontmatter, body: '' }, '')).toMatchObject({
+		expect(toPageInput({ basename: 'note', frontmatter, body: '' }, 'note')).toMatchObject({
 			title: 'note',
 			description: '',
 			tags: [],
@@ -41,11 +51,7 @@ describe('toPageInput', () => {
 	});
 
 	it('ignores frontmatter that is not a mapping', () => {
-		expect(toPageInput({ basename: 'note', frontmatter: ['a'], body: '' }, '').title).toBe('note');
-	});
-
-	it('rejects a note whose name gives an empty path', () => {
-		expect(() => toPageInput({ basename: '???', body: '' }, '')).toThrow(/wiki path/);
+		expect(toPageInput({ basename: 'note', frontmatter: ['a'], body: '' }, 'note').title).toBe('note');
 	});
 });
 

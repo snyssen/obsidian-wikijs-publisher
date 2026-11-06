@@ -13,6 +13,8 @@ export interface WikiJsPublisherSettings {
 	locale: string;
 	defaultDestination: string;
 	attachmentFolder: string;
+	/** Frontmatter property that marks notes for publishing. */
+	publishProperty: string;
 	/** Destination of the last push, prefilled next time. Not shown in the settings tab. */
 	lastDestination?: string;
 	/** Where notes were pushed (see PushRegistry). Not shown in the settings tab. */
@@ -26,6 +28,7 @@ export const DEFAULT_SETTINGS: WikiJsPublisherSettings = {
 	locale: '',
 	defaultDestination: '',
 	attachmentFolder: 'attachments',
+	publishProperty: 'publish-to-wikijs',
 };
 
 type SettingKey = keyof WikiJsPublisherSettings;
@@ -103,6 +106,16 @@ export class WikiJsPublisherSettingTab extends PluginSettingTab {
 							key: 'attachmentFolder',
 							placeholder: 'attachments',
 							validate: validateAttachmentFolder,
+						},
+					},
+					{
+						name: 'Publishing property',
+						desc: 'Frontmatter property that marks the notes pushed by the "Push notes marked for publishing" command.',
+						control: {
+							type: 'text',
+							key: 'publishProperty',
+							placeholder: 'publish-to-wikijs',
+							validate: (value) => (value.trim() === '' ? 'Enter a property name' : undefined),
 						},
 					},
 				],

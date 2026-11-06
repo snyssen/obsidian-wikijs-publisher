@@ -1,5 +1,6 @@
 ---
 title: Getting started
+publish-to-wikijs: true
 description: A sample note to push
 tags:
   - guide

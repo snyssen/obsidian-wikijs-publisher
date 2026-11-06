@@ -1,3 +1,6 @@
+---
+publish-to-wikijs: true
+---
 # Welcome
 
 This is the throwaway vault used to develop the **Wiki.js Publisher** plugin. Its notes cover the Markdown features the plugin will have to convert.

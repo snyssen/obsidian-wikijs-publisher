@@ -2,7 +2,6 @@ import { App, TFile } from 'obsidian';
 import { LinkTarget } from '../convert';
 import { toAssetFileName, toWikiPath } from '../wiki/paths';
 import { WikiClient } from '../wiki/types';
-import { PushRegistry } from './registry';
 
 const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'avif']);
 
@@ -29,33 +28,31 @@ const MIME_TYPES: Record<string, string> = {
 export interface ResolveOptions {
 	app: App;
 	client: WikiClient;
-	registry: PushRegistry;
-	wikiUrl: string;
-	/** The note being pushed, and the path its page gets. */
-	file: TFile;
-	pagePath: string;
+	/** Wiki path of a note's page: being pushed, or pushed before. Undefined if it isn't on the wiki. */
+	pagePathOf(file: TFile): string | undefined;
 	/** Wiki folder that attachments are uploaded under. */
 	attachmentFolder: string;
+	/** Uploads by vault path, shared by the notes of a push so each file is uploaded once. */
+	uploads: Map<string, Promise<LinkTarget>>;
 }
 
 /**
  * Resolves the link paths of a note to wiki targets, uploading the attachments it refers to.
- * Notes never pushed to this wiki are left out, so their links are marked as broken.
+ * Notes not on the wiki are left out, so their links are marked as broken.
  */
-export async function resolveLinks(linkpaths: string[], options: ResolveOptions): Promise<Map<string, LinkTarget>> {
-	const { app, client, registry, wikiUrl, file, pagePath } = options;
+export async function resolveLinks(source: TFile, linkpaths: string[], options: ResolveOptions): Promise<Map<string, LinkTarget>> {
+	const { app, client, uploads } = options;
 	const targets = new Map<string, LinkTarget>();
-	const uploads = new Map<string, Promise<LinkTarget>>();
 
 	for (const linkpath of linkpaths) {
-		const dest = findLinkedFile(app, linkpath, file);
+		const dest = findLinkedFile(app, linkpath, source);
 		if (!dest) continue;
 		if (dest.extension === 'md') {
-			const path = dest === file ? pagePath : registry.get(wikiUrl, dest.path);
+			const path = options.pagePathOf(dest);
 			if (path !== undefined) targets.set(linkpath, { kind: 'page', path });
 			continue;
 		}
-		// The same file can be linked to with different link paths: upload it once
+		// The same file can be linked to from several notes, or with different link paths: upload it once
 		let upload = uploads.get(dest.path);
 		if (!upload) {
 			upload = uploadAttachment(app, client, dest, options.attachmentFolder);

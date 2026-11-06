@@ -6,6 +6,24 @@ import { fakeHttp, json, on } from '../helpers/fake-http';
 const site = on('GET', '/_api/sites/current', json(200, { id: 'site-1', title: 'Default Site' }));
 const input = { path: 'notes/test', title: 'Test', content: '# Test' };
 
+describe('V3Client.checkConnection', () => {
+	const search = on('GET', '/pages/search', json(200, []));
+
+	it('reads the server version from the OpenAPI spec', async () => {
+		const spec = on('GET', '/_api/json', { status: 200, text: '{"openapi":"3.1.0","info":{"title":"Wiki.js API","version":"3.0.2"},"paths":{}}' });
+		await expect(new V3Client(fakeHttp(site, search, spec), 'http://wiki', 't', '').checkConnection()).resolves.toEqual({
+			version: 'v3',
+			serverVersion: '3.0.2',
+			site: 'Default Site',
+		});
+	});
+
+	it('connects without it when the spec is unavailable', async () => {
+		const info = await new V3Client(fakeHttp(site, search), 'http://wiki', 't', '').checkConnection();
+		expect(info.serverVersion).toBeUndefined();
+	});
+});
+
 describe('V2Client', () => {
 	it('maps a missing page to null', async () => {
 		const http = fakeHttp(
