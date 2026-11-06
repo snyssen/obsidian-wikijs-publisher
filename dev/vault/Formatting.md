@@ -30,7 +30,7 @@ description: This note is used to test complex Markdown formatting and its prope
 [Markdown link with spaces](<Guides/Getting started.md>)
 [Encoded markdown link](Guides/Getting%20started.md)
 [[Formatting#^block-ref|WikiLink to a block]]
-[[Not pushed yet]] (no such note: becomes plain text)
+[[Not pushed yet]] (no such note: shown as a broken link)
 ![[Welcome]] (note embed: becomes a link)
 [External link](https://js.wiki)
 

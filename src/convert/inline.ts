@@ -76,7 +76,7 @@ function convertWikilink(link: LinkParts, embed: boolean, ctx: InlineContext): s
 	}
 	const text = link.alias ?? displayName(link);
 	if (link.path === '') return link.subpath ? `[${text}](${anchor(link.subpath, ctx)})` : text;
-	if (!target) return text;
+	if (!target) return brokenLink(text);
 	return target.kind === 'page' ? `[${text}](/${target.path}${anchor(link.subpath, ctx)})` : `[${text}](${target.url})`;
 }
 
@@ -86,7 +86,7 @@ function convertMarkdownLink(match: string, isImage: boolean, text: string, url:
 	if (link.path === '') return link.subpath ? `[${text}](${anchor(link.subpath, ctx)})` : match;
 
 	const target = ctx.resolve(link.path);
-	if (!target) return isImage ? match : text;
+	if (!target) return brokenLink(text || link.path);
 	if (isImage && target.kind === 'file') {
 		// Obsidian takes a size after a pipe in the alt text: ![alt|300](image.png)
 		const pipe = text.lastIndexOf('|');
@@ -146,6 +146,14 @@ function displayName(link: LinkParts): string {
 	const heading = link.subpath && !link.subpath.startsWith('^') ? link.subpath.split('#').join(' > ') : undefined;
 	if (link.path === '') return heading ?? '';
 	return heading ? `${baseName(link.path)} > ${heading}` : baseName(link.path);
+}
+
+/**
+ * Text of a link that can't be made: the note isn't pushed to this wiki (or the file doesn't exist), so a
+ * marker shows that a link was meant to be there. Plain HTML, kept by both wikis.
+ */
+export function brokenLink(text: string): string {
+	return `${text}<sup title="Not published on this wiki, or not found in the vault">⛓️‍💥 broken link</sup>`;
 }
 
 function baseName(path: string): string {

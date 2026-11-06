@@ -24,7 +24,7 @@ const headings = [
 
 const markdown = [
 	...headings.map((heading) => `## ${heading}\n`),
-	'Some ==highlighted [[#Simple heading|link]]== text with #inline-tag.',
+	'Some ==highlighted [[#Simple heading|link]]== text with #inline-tag and a [[Missing note]].',
 	'',
 	'> [!warning] Careful',
 	'> Watch out.',
@@ -76,6 +76,7 @@ describe.each(instances)('Converted Markdown on Wiki.js $version', ({ version, u
 			expect(html).toContain(`href="#${dialect.headingId('Simple heading')}"`);
 			expect(html).toMatch(/<mark>highlighted <a[^>]*>link<\/a><\/mark>/);
 			expect(html).toContain(`href="${dialect.tagUrl('inline-tag')}"`.replace('&', '&amp;'));
+			expect(html).toMatch(/Missing note<sup title="[^"]+">⛓️‍💥 broken link<\/sup>/);
 
 			// Callouts: styled, titled, code and nesting kept, nothing leaking as text
 			expect(html).toMatch(/<blockquote class="is-warning">[\s\S]*Careful[\s\S]*<code class="language-js">/);

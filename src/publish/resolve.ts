@@ -40,7 +40,7 @@ export interface ResolveOptions {
 
 /**
  * Resolves the link paths of a note to wiki targets, uploading the attachments it refers to.
- * Notes never pushed to this wiki are left out, so their links become plain text.
+ * Notes never pushed to this wiki are left out, so their links are marked as broken.
  */
 export async function resolveLinks(linkpaths: string[], options: ResolveOptions): Promise<Map<string, LinkTarget>> {
 	const { app, client, registry, wikiUrl, file, pagePath } = options;

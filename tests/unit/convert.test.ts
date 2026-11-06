@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { convertMarkdown, LinkTarget, referencedLinkpaths } from '../../src/convert';
 import { calloutKind, Dialect, v2Dialect, v3Dialect } from '../../src/convert/dialect';
-import { headingText } from '../../src/convert/inline';
+import { brokenLink, headingText } from '../../src/convert/inline';
 
 const targets: Record<string, LinkTarget> = {
 	'Other note': { kind: 'page', path: 'notes/other-note' },
@@ -24,8 +24,8 @@ describe('wikilinks', () => {
 		['[[Other note#^block-1]]', '[Other note](/notes/other-note)'],
 		['[[#Local heading]]', '[Local heading](#local-heading)'],
 		['[[Folder/Deep note.md]]', '[Deep note](/notes/deep-note)'],
-		['[[Unpublished note]]', 'Unpublished note'],
-		['[[Unpublished note|alias]]', 'alias'],
+		['[[Unpublished note]]', brokenLink('Unpublished note')],
+		['[[Unpublished note|alias]]', brokenLink('alias')],
 		['| [[Other note\\|cell]] |', '| [cell](/notes/other-note) |'],
 		['[[doc.pdf]]', '[doc.pdf](/_files/attachments/doc.pdf)'],
 	])('%s → %s', (input, output) => {
@@ -46,7 +46,7 @@ describe('embeds', () => {
 		['![[image.png|A cat]]', '![A cat](/_files/attachments/image.png)'],
 		['![[doc.pdf]]', '[doc.pdf](/_files/attachments/doc.pdf)'],
 		['![[Other note]]', '[Other note](/notes/other-note)'],
-		['![[missing.png]]', 'missing.png'],
+		['![[missing.png]]', brokenLink('missing.png')],
 	])('%s → %s', (input, output) => {
 		expect(convert(input).content).toBe(output);
 	});
@@ -61,8 +61,9 @@ describe('Markdown links', () => {
 		['[top](#Local%20heading)', '[top](#local-heading)'],
 		['[site](https://example.com/#frag)', '[site](https://example.com/#frag)'],
 		['[abs](/some/page)', '[abs](/some/page)'],
-		['[gone](Unpublished.md)', 'gone'],
-		['![gone](missing.png)', '![gone](missing.png)'],
+		['[gone](Unpublished.md)', brokenLink('gone')],
+		['![gone](missing.png)', brokenLink('gone')],
+		['![](missing.png)', brokenLink('missing.png')],
 	])('%s → %s', (input, output) => {
 		expect(convert(input).content).toBe(output);
 	});
