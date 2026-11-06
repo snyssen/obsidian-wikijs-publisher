@@ -28,7 +28,7 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v23
       - name: Set up Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@v15
+        uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # v15
       # The package build type-checks, lints, runs the unit tests and bundles main.js
       - name: Build plugin and dev shell
         run: nix build -L .#wikijs-publisher .#devShells.x86_64-linux.default
