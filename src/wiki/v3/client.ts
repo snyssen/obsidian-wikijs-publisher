@@ -1,4 +1,4 @@
-import { HttpFn, HttpRequest, isRecord, joinUrl, parseJson, send, WikiApiError } from '../http';
+import { fileTooLarge, HttpFn, HttpRequest, isRecord, joinUrl, parseJson, send, WikiApiError } from '../http';
 import { BaseWikiClient } from '../base-client';
 import { ConnectionInfo, PageInput, RemotePage, UploadedAsset } from '../types';
 import { pathHash } from './path-hash';
@@ -103,9 +103,12 @@ export class V3Client extends BaseWikiClient {
 		const query = new URLSearchParams({ fileName });
 		if (folderPath) query.set('folderPath', folderPath);
 		// Raw body, not multipart. A file with the same name is overwritten (the default conflict behaviour).
-		const result = (await this.request('POST', `/sites/${site.id}/assets?${query.toString()}`, data, mimeType)) as {
-			asset: Asset;
-		};
+		let result: { asset: Asset };
+		try {
+			result = (await this.request('POST', `/sites/${site.id}/assets?${query.toString()}`, data, mimeType)) as { asset: Asset };
+		} catch (error) {
+			throw error instanceof WikiApiError && error.status === 413 ? fileTooLarge(413) : error;
+		}
 		const { fileName: storedName, folderPath: storedFolder } = result.asset;
 		return {
 			fileName: storedName,

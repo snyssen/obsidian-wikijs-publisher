@@ -50,6 +50,23 @@ describe('V2Client', () => {
 		expect(page).toEqual({ id: '7', path: 'p', title: 'P', url: 'http://wiki/p' });
 	});
 
+	it('explains an upload over the size limit', async () => {
+		const http = fakeHttp(
+			on('POST', '/graphql', json(200, { data: { assets: { folders: [] } } })),
+			on('POST', '/u', { status: 500, text: '<!DOCTYPE html><html><head><title>Error | Wiki.js</title></head><body><div class="app-error"><strong>Oops, something went wrong...</strong><span>File too large</span></div></body></html>' }),
+		);
+		await expect(new V2Client(http, 'http://wiki', 'key', '').uploadAsset('', 'big.pdf', new ArrayBuffer(8), 'application/pdf')).rejects.toThrow(
+			"the file is larger than the wiki's maximum upload size",
+		);
+	});
+
+	it('keeps only the message of an HTML upload error', async () => {
+		const http = fakeHttp(on('POST', '/u', { status: 502, text: '<html><body><h1>Bad Gateway</h1></body></html>' }));
+		await expect(new V2Client(http, 'http://wiki', 'key', '').uploadAsset('', 'a.png', new ArrayBuffer(8), 'image/png')).rejects.toThrow(
+			/^Wiki.js could not store a.png: HTTP 502$/,
+		);
+	});
+
 	it('reports a failed mutation', async () => {
 		const http = fakeHttp(on('POST', '/graphql', json(200, {
 			data: { pages: { create: { responseResult: { succeeded: false, message: 'Duplicate' }, page: null } } },
@@ -85,6 +102,13 @@ describe('V3Client', () => {
 		]);
 		expect(http.requests[2]?.headers).not.toHaveProperty('Content-Type');
 		expect(page.warning).toContain('could not render it');
+	});
+
+	it('explains an upload over the size limit', async () => {
+		const http = fakeHttp(site, on('POST', '/assets', json(413, { message: 'Request body is too large' })));
+		await expect(new V3Client(http, 'http://wiki', 'token', '').uploadAsset('', 'big.pdf', new ArrayBuffer(8), 'application/pdf')).rejects.toThrow(
+			"the file is larger than the wiki's maximum upload size",
+		);
 	});
 
 	it('explains a missing scope', async () => {

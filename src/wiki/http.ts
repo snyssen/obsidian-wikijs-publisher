@@ -16,6 +16,11 @@ export interface HttpResponse {
 /** Performs a request. Resolves for every HTTP status; rejects only when the server can't be reached. */
 export type HttpFn = (request: HttpRequest) => Promise<HttpResponse>;
 
+/** Error for an upload the wiki refused for its size (each wiki has a configurable limit). */
+export function fileTooLarge(status: number): WikiApiError {
+	return new WikiApiError("the file is larger than the wiki's maximum upload size, which can be raised in its administration settings", status);
+}
+
 export class WikiApiError extends Error {
 	constructor(
 		message: string,

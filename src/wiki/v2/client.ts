@@ -1,4 +1,4 @@
-import { HttpFn, isRecord, joinUrl, parseJson, send, WikiApiError } from '../http';
+import { fileTooLarge, HttpFn, isRecord, joinUrl, parseJson, send, WikiApiError } from '../http';
 import { BaseWikiClient } from '../base-client';
 import { ConnectionInfo, PageInput, RemotePage, UploadedAsset } from '../types';
 import { buildMultipart } from './multipart';
@@ -127,7 +127,14 @@ export class V2Client extends BaseWikiClient {
 			body,
 		});
 		if (response.status !== 200) {
-			throw new WikiApiError(`Wiki.js could not store ${fileName}: ${response.text || `HTTP ${response.status}`}`, response.status);
+			// Upload errors come as an HTML error page, with the reason in a <span>
+			const reason = /<span>([^<]+)<\/span>/.exec(response.text)?.[1]?.trim();
+			if (reason === 'File too large') throw fileTooLarge(response.status);
+			const isHtml = response.text.trimStart().startsWith('<');
+			throw new WikiApiError(
+				`Wiki.js could not store ${fileName}: ${reason ?? (isHtml || !response.text ? `HTTP ${response.status}` : response.text)}`,
+				response.status,
+			);
 		}
 
 		// The upload only answers "ok", and Wiki.js may have renamed the file (lowercased, spaces replaced)

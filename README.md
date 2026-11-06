@@ -164,6 +164,7 @@ Code blocks and inline code are never changed. Headings, lists, tasks, tables, f
 - Pushing a note doesn't update the pages that link to it, except with automatic push: push them again to fix their links.
 - Deleting a note, or excluding it, doesn't delete its page from the wiki.
 - Embedded notes are linked, not inlined.
+- Attachments larger than the wiki's maximum upload size (5 MB by default on Wiki.js 2, 10 MB on Wiki.js 3) can't be uploaded, and the notes linking to them fail to push. Raise the limit in the wiki's administration settings.
 - Edits made on the wiki are overwritten by the next push of the note.
 
 ## Network use and privacy

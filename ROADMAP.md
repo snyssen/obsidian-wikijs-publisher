@@ -148,6 +148,7 @@ Refined with the user on 2026-11-06. The value of the publishing property (`publ
 - [x] Screenshots added to `docs/images/` (author)
 - [x] License: MIT (replaces the sample plugin's 0-BSD notice)
 - [ ] Error messages reviewed
+  - [x] Uploads over the wiki's size limit (found on a real v2 instance with a 55 MB PDF): v2 answered with a whole HTML error page, now reported as "the file is larger than the wiki's maximum upload size, which can be raised in its administration settings" on both versions; other HTML error pages are reduced to their message or HTTP status
 - [ ] Mobile smoke test
 - [ ] Release **0.3.0 (alpha)** through the release workflow: the release PR Release Please opens after the M6 `feat:` commit already proposes 0.3.0 (`bump-minor-pre-major`), so merging it is enough
 - [ ] Later, once the plugin has seen real use: 1.0.0 (`Release-As: 1.0.0` in a commit body) and submission to the community catalog
@@ -256,6 +257,7 @@ Gotchas found so far on v3 (3.0.2):
 | Version detection | `POST /graphql` answers | `GET /_api/sites/current` returns JSON; `POST /graphql` returns 404 |
 | Token check | `system.info` query (admin only, so it also checks for full access). A bad key gets HTTP 200 with a `Forbidden` GraphQL error. | `GET /sites/:id/pages/search?limit=1` (needs the `pages` scope): 401 with a reason (`Token is malformed.`, `The API is disabled.`…), 403 for a missing scope |
 | Move a page | `pages.move(id, destinationPath, destinationLocale)` | `PUT /sites/:id/pages/:pageId/path` `{ path, updateLinks }` (`updateLinks` rewrites the links of other pages) |
+| Upload size limit | `uploads.maxFileSize`, 5 MB by default (site setting `uploadMaxFileSize`). Too large: HTTP 500 with an HTML error page, reason in `<span>File too large</span>` | `security.uploadMaxFileSize`, 10 MB by default. Too large: 413 `Request body is too large` |
 | Server version | `system.info.currentVersion` | `/_api/system/info` refuses personal access tokens (403); the public OpenAPI spec has it (`info.version`, first bytes of a 512 KB document, `Range` ignored). Fetched by **Test connection** only |
 
 Gotchas found on v2 (2.5.x):
