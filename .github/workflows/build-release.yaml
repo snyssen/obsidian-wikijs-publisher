@@ -26,7 +26,7 @@ jobs:
       - name: Check Nix flake inputs
         uses: DeterminateSystems/flake-checker-action@52880e9a632c10558027febd64b43dd5a56d7fca # main
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v23
+        uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
       - name: Set up Nix cache
         uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # v15
       # The package build type-checks, lints, runs the unit tests and bundles main.js
