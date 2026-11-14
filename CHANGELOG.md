@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/snyssen/obsidian-wikijs-publisher/compare/0.3.0...0.3.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* improve error messages, especially in case of attachments too large ([0a618c4](https://github.com/snyssen/obsidian-wikijs-publisher/commit/0a618c4f810951b5a5c06ae2ebf4b19e405a9a6b))
+
 ## [0.3.0](https://github.com/snyssen/obsidian-wikijs-publisher/compare/0.2.0...0.3.0) (2026-11-06)
 
 
