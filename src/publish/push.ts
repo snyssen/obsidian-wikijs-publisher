@@ -175,7 +175,7 @@ async function readNote(plugin: WikiJsPublisherPlugin, file: TFile): Promise<Not
 		try {
 			frontmatter = parseYaml(info.frontmatter);
 		} catch (error) {
-			throw new Error(`its frontmatter is not valid YAML (${errorMessage(error)})`);
+			throw new Error(`its frontmatter is not valid YAML (${errorMessage(error)})`, { cause: error });
 		}
 	}
 	return { basename: file.basename, frontmatter, body: content.slice(info.contentStart) };

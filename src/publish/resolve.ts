@@ -93,6 +93,6 @@ async function uploadAttachment(app: App, client: WikiClient, file: TFile, attac
 		);
 		return { kind: 'file', url: asset.path, image: IMAGE_EXTENSIONS.has(extension) };
 	} catch (error) {
-		throw new Error(`could not upload ${file.path}: ${error instanceof Error ? error.message : String(error)}`);
+		throw new Error(`could not upload ${file.path}: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
 	}
 }
