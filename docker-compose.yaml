@@ -44,7 +44,7 @@ services:
       - db-v3-data:/var/lib/postgresql
 
   wiki-v3:
-    image: ghcr.io/requarks/wiki:3.5.0@sha256:3de0495234db06fc3ad78b8a6dc71ff297b55ed0d3b37d61eb0fbfe767f6e5b6
+    image: ghcr.io/requarks/wiki:3.6.1@sha256:bd4819960f2f9d35ef016653b97abf5fc0cd93a941d3baf34d2e79e4c9059169
     depends_on:
       db-v3:
         condition: service_healthy
